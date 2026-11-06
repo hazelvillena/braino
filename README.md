@@ -26,3 +26,13 @@ Agent integration is planned, not connected yet. Use an app-owned command/API la
 `Sources/Braino.swift` contains the SwiftUI interface, AppKit window/menu bar lifecycle, Carbon hotkey registration, and atomic JSON persistence. `Package.swift` supports opening the project in development tools; `build.sh` builds the app directly with a local compiler cache.
 
 This is an initial prototype. It is locally ad-hoc signed, not notarized for distribution. Build verification does not establish interactive UI or shortcut behavior; those require a desktop smoke test.
+
+## Branding and installer
+
+The warm yellow/black identity is shared across the app, Dock, Finder and installer. Run `./package.sh` to create `dist/Braino.dmg`; open it and drag Braino to Applications. This build targets Apple Silicon Macs. The installer and app are locally signed, not notarized. macOS may require approval when distributing to another Mac.
+
+Generate a deterministic interface preview without changing tasks:
+
+```sh
+Braino.app/Contents/MacOS/Braino --render-preview /tmp/braino-preview.png
+```
