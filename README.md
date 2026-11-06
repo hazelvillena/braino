@@ -11,15 +11,13 @@ Requires macOS 14+ and Apple Command Line Tools. No third-party dependencies.
 open Braino.app
 ```
 
-Enter a task and press Return. The sun toggles Today; the circle completes a task. Click the ellipsis to edit notes. Right-click a task to delete it. The pin keeps the window above other apps; unpinning leaves it as a normal desktop window. Closing the window keeps the menu bar and shortcut running. Quit from the menu bar. The app follows you across Spaces.
-
-Inbox contains all open tasks, including Today tasks. Logbook contains completed tasks; click a completed circle to reopen it.
+Enter a task and press Return. Today includes overdue tasks; This week groups Monday–Sunday with day filters; Someday holds undated ideas. The ellipsis opens notes, schedule and an optional category. Complete a task to play a short scratch-off and move it to the Completed dropdown. Filter completion history by day, week, month, all time or inclusive custom dates. Undo restores the last completion. The labeled pin keeps Braino above other apps. Closing the window keeps menu bar access and the shortcut running. Quit from the menu bar.
 
 ## Local data and agent integration
 
-Tasks persist in `~/Library/Application Support/Braino/tasks.json`. No cloud, analytics, or network requests. Stable UUIDs, title, notes, Today and completion flags form the initial task model.
+Tasks persist in `~/Library/Application Support/Braino/tasks.json`. No cloud, analytics, or network requests. Stable UUIDs, title, notes, schedule date, optional category, and completion timestamp form the initial task model.
 
-Agent integration is planned, not connected yet. Use an app-owned command/API layer for future writes so agents and the UI cannot overwrite each other. Do not edit the JSON while the app is running. Future work: agent task provenance, reviewable proposed changes, projects, scheduling, recurring tasks, undo, configurable shortcut, and launch at login.
+Agent integration is planned, not connected yet. Use an app-owned command/API layer for future writes so agents and the UI cannot overwrite each other. Do not edit the JSON while the app is running. Future work: agent task provenance, reviewable proposed changes, projects, recurring tasks, configurable shortcut, and launch at login.
 
 ## Source
 
@@ -40,3 +38,7 @@ Braino.app/Contents/MacOS/Braino --render-preview /tmp/braino-preview.png
 ## Local browser design preview
 
 Run `node preview/server.mjs`, then visit http://localhost:4317. No dependencies or installation needed. The preview supports capture, Today/Inbox/Logbook, notes, and completion with its own browser-local demo data. It is an HTML approximation, not the native SwiftUI renderer; native window pinning and system-wide hotkeys are not available in a browser. The server binds only to 127.0.0.1 and serves only the preview and its icon. Stop with Control-C.
+
+## Design and verification
+
+See [the design system](docs/design-system.md) for tokens, completion timing, information architecture, research and migration behavior. Run `./scripts/test.sh` for browser model tests and native storage, migration, scheduling and history checks. Browser demo state uses `braino-preview-v2`; existing v1 tasks migrate without inventing dates. Preview data remains separate from native data.

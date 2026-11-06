@@ -1,6 +1,6 @@
 # Braino brand
 
-Warm sunflower yellow #F4C84A, carbon #191816, and ivory surfaces.
+Vibrant lemon yellow #F5D928, carbon #191A17, and a neutral #F9F8F2 canvas. See docs/design-system.md for the current tokens.
 
 BrainoMark.png is the original supplied transparent PNG, copied byte-for-byte. Its transparency, internal details, and dissolving fragments are preserved. Do not replace it with a generated silhouette. An earlier imagegen interpretation was rejected and is not used.
 

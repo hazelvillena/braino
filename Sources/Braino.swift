@@ -6,24 +6,64 @@ struct TaskItem: Codable, Identifiable {
     var id = UUID()
     var title: String
     var notes = ""
-    var today = false
+    var today = false // Legacy flag, migrated on load.
     var completed = false
     var created = Date()
+    var scheduled: Date? = nil
+    var completedAt: Date? = nil
+    var bucket: String? = nil
+    var planned: Date? { scheduled ?? (today ? Calendar.current.startOfDay(for: Date()) : nil) }
+}
+
+enum TaskDates {
+    static let calendar = Calendar.current
+    static var today: Date { calendar.startOfDay(for: Date()) }
+    static func add(_ days: Int, to date: Date = today) -> Date { calendar.date(byAdding: .day, value: days, to: date)! }
+    static var week: [Date] {
+        let offset = (calendar.component(.weekday, from: today) + 5) % 7
+        return (0..<7).map { add($0 - offset) }
+    }
+    static func active(_ task: TaskItem, view: String, day: Date?, bucket: String) -> Bool {
+        guard !task.completed, matchesBucket(task, bucket) else { return false }
+        if view == "Someday" { return task.planned == nil }
+        guard let date = task.planned else { return false }
+        if view == "Today" { return date < add(1) }
+        if let day { return calendar.isDate(date, inSameDayAs: day) }
+        return date >= week[0] && date < add(1, to: week[6])
+    }
+    static func matchesBucket(_ task: TaskItem, _ bucket: String) -> Bool {
+        bucket == "All categories" || (bucket == "Uncategorized" ? (task.bucket ?? "").isEmpty : task.bucket == bucket)
+    }
+    static func history(_ task: TaskItem, range: String, start: Date, end: Date, bucket: String) -> Bool {
+        guard task.completed, matchesBucket(task, bucket) else { return false }
+        if range == "All time" { return true }
+        guard let date = task.completedAt else { return false }
+        let lower = range == "Past day" ? today : range == "Past week" ? add(-6) : range == "Past month" ? add(-29) : calendar.startOfDay(for: start)
+        let upper = range == "Custom range" ? add(1, to: calendar.startOfDay(for: end)) : add(1)
+        return date >= lower && date < upper
+    }
 }
 
 final class TaskStore: ObservableObject {
     @Published var tasks: [TaskItem] = []
     @Published var error: String?
+    @Published var lastCompleted: UUID?
     let url: URL
-    init() {
-        url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Braino/tasks.json")
+    init(url: URL? = nil) {
+        self.url = url ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Braino/tasks.json")
         reload()
     }
     func reload() {
         do {
             guard FileManager.default.fileExists(atPath: url.path) else { return }
             tasks = try JSONDecoder().decode([TaskItem].self, from: Data(contentsOf: url))
+            var migrated = false
+            for index in tasks.indices where tasks[index].today {
+                if tasks[index].scheduled == nil { tasks[index].scheduled = TaskDates.today }
+                tasks[index].today = false; migrated = true
+            }
             error = nil
+            if migrated { save() }
         } catch { self.error = "Couldn’t read your tasks: \(error.localizedDescription)" }
     }
     func save() {
@@ -34,137 +74,235 @@ final class TaskStore: ObservableObject {
             error = nil
         } catch { self.error = "Couldn’t save your tasks: \(error.localizedDescription)" }
     }
-    func add(_ title: String, today: Bool) {
+    func add(_ title: String, date: Date?, bucket: String) {
         let text = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, error == nil else { return }
-        tasks.insert(TaskItem(title: text, today: today), at: 0); save()
+        let category = bucket.trimmingCharacters(in: .whitespacesAndNewlines)
+        tasks.insert(TaskItem(title: text, scheduled: date, bucket: category.isEmpty ? nil : category), at: 0); save()
     }
     func update(_ item: TaskItem) {
         guard let index = tasks.firstIndex(where: { $0.id == item.id }) else { return }
         tasks[index] = item; save()
     }
+    func toggle(_ id: UUID) {
+        guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[index].completed.toggle()
+        tasks[index].completedAt = tasks[index].completed ? Date() : nil
+        if tasks[index].completed { lastCompleted = id }
+        save()
+    }
+    func undo() {
+        guard let id = lastCompleted, let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[index].completed = false; tasks[index].completedAt = nil; lastCompleted = nil; save()
+    }
 }
 
-// Brand palette: sunflower, carbon, and warm ivory.
-let ink = Color(red: 0.098, green: 0.094, blue: 0.086)
-let accent = ink
-let sunflower = Color(red: 0.957, green: 0.784, blue: 0.290)
-let paper = Color(red: 0.980, green: 0.969, blue: 0.937)
+// Braino design tokens: lemon, carbon and a quiet neutral canvas.
+let ink = Color(red: 25.0/255, green: 26.0/255, blue: 23.0/255)
+let sunflower = Color(red: 245.0/255, green: 217.0/255, blue: 40.0/255)
+let paper = Color(red: 249.0/255, green: 248.0/255, blue: 242.0/255)
 
 struct BrandMark: View {
-    var size: CGFloat = 36
+    var size: CGFloat = 43
     var body: some View {
         Group {
             if let url = Bundle.main.url(forResource: "BrainoIcon", withExtension: "png"), let image = NSImage(contentsOf: url) {
                 Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
-            } else {
-                Image(systemName: "square.grid.3x3.fill").resizable().padding(8)
-            }
-        }.frame(width: size, height: size).clipShape(RoundedRectangle(cornerRadius: size * 0.24))
-            .accessibilityLabel("Braino")
+            } else { Image(systemName: "brain").resizable().scaledToFit().padding(8) }
+        }.frame(width: size, height: size).accessibilityLabel("Braino")
     }
 }
 
 struct TaskRow: View {
     @EnvironmentObject var store: TaskStore
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     let task: TaskItem
     @State private var expanded = false
+    @State private var finishing = false
+    private func finish() {
+        guard !finishing else { return }
+        if task.completed || reduceMotion { store.toggle(task.id); return }
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.65)) { finishing = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            withAnimation(.easeOut(duration: 0.16)) { store.toggle(task.id) }
+            finishing = false
+        }
+    }
     var body: some View {
-        HStack(alignment: .top, spacing: 13) {
-            Button { var t = task; t.completed.toggle(); store.update(t) } label: {
-                Image(systemName: task.completed ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 21, weight: .light)).foregroundStyle(task.completed ? accent : Color.gray.opacity(0.5))
-            }.buttonStyle(.plain).help(task.completed ? "Reopen task" : "Complete task")
-            VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .top, spacing: 11) {
+            Button(action: finish) {
+                ZStack {
+                    Circle().strokeBorder(task.completed || finishing ? sunflower : Color.gray.opacity(0.45), lineWidth: 1.4)
+                        .background(Circle().fill(task.completed || finishing ? sunflower : .clear))
+                    if task.completed || finishing { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(ink) }
+                }.frame(width: 20, height: 20).scaleEffect(finishing ? 1.08 : 1)
+            }.buttonStyle(.plain).disabled(finishing).help(task.completed ? "Reopen task" : "Complete task").accessibilityLabel(task.completed ? "Reopen \(task.title)" : "Complete \(task.title)")
+            VStack(alignment: .leading, spacing: 6) {
                 TextField("Task", text: Binding(get: { task.title }, set: { value in var t = task; t.title = value; store.update(t) }))
-                    .textFieldStyle(.plain).font(.system(size: 14)).strikethrough(task.completed).foregroundStyle(task.completed ? .secondary : ink)
+                    .textFieldStyle(.plain).font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(task.completed ? .secondary : ink)
+                    .overlay(alignment: .leading) {
+                        Rectangle().fill(task.completed ? Color.gray : ink).frame(height: 1.5)
+                            .scaleEffect(x: task.completed || finishing ? 1 : 0, y: 1, anchor: .leading)
+                            .animation(reduceMotion ? nil : .easeOut(duration: 0.24), value: finishing).allowsHitTesting(false)
+                    }
                 if expanded {
-                    TextField("Add a note…", text: Binding(get: { task.notes }, set: { value in var t = task; t.notes = value; store.update(t) }), axis: .vertical)
-                        .textFieldStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
-                } else if !task.notes.isEmpty {
-                    Text(task.notes).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
-                }
+                    TextField("Notes", text: Binding(get: { task.notes }, set: { value in var t = task; t.notes = value; store.update(t) }), axis: .vertical)
+                        .textFieldStyle(.roundedBorder).font(.system(size: 11))
+                    HStack {
+                        TextField("Category · optional", text: Binding(get: { task.bucket ?? "" }, set: { value in var t = task; t.bucket = value.isEmpty ? nil : value; store.update(t) })).textFieldStyle(.roundedBorder)
+                        Menu {
+                            Button("Today") { var t = task; t.today = false; t.scheduled = TaskDates.today; store.update(t) }
+                            Button("Tomorrow") { var t = task; t.today = false; t.scheduled = TaskDates.add(1); store.update(t) }
+                            Button("Someday") { var t = task; t.today = false; t.scheduled = nil; store.update(t) }
+                        } label: { Label("When", systemImage: "calendar") }
+                    }.font(.system(size: 10))
+                    if let date = task.planned {
+                        DatePicker("Scheduled", selection: Binding(get: { date }, set: { value in var t = task; t.today = false; t.scheduled = TaskDates.calendar.startOfDay(for: value); store.update(t) }), displayedComponents: .date).font(.system(size: 10))
+                    }
+                } else if !task.notes.isEmpty { Text(task.notes).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2) }
+                if let category = task.bucket, !category.isEmpty { Text(category).font(.system(size: 10)).foregroundStyle(.secondary) }
+                if task.completed { Text(task.completedAt.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Completion date unavailable").font(.system(size: 9)).foregroundStyle(.tertiary) }
+                else if let date = task.planned, date < TaskDates.today { Text("Earlier · \(date.formatted(date: .abbreviated, time: .omitted))").font(.system(size: 9)).foregroundStyle(.secondary) }
             }
-            Button { var t = task; t.today.toggle(); store.update(t) } label: {
-                Image(systemName: task.today ? "sun.max.fill" : "sun.max").foregroundStyle(task.today ? accent : Color.gray.opacity(0.4))
-            }.buttonStyle(.plain).help(task.today ? "Remove from Today" : "Move to Today")
-            Button { expanded.toggle() } label: { Image(systemName: "ellipsis").foregroundStyle(.secondary) }
-                .buttonStyle(.plain).help("Show notes")
-        }
-        .padding(14).background(.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 12))
-        .contextMenu {
-            Button("Delete task", role: .destructive) { store.tasks.removeAll { $0.id == task.id }; store.save() }
-        }
+            Button { expanded.toggle() } label: { Image(systemName: "ellipsis").foregroundStyle(.secondary) }.buttonStyle(.plain).help("Edit notes, date and category")
+        }.padding(14).background(finishing ? sunflower.opacity(0.08) : .white.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
+            .contextMenu { Button("Delete task", role: .destructive) { store.tasks.removeAll { $0.id == task.id }; store.save() } }
     }
 }
 
 struct ContentView: View {
     @EnvironmentObject var store: TaskStore
     @State private var selection = "Today"
+    @State private var selectedDay: Date? = nil
+    @State private var bucket = "All categories"
     @State private var draft = ""
+    @State private var draftBucket = ""
+    @State private var draftDate = TaskDates.today
+    @State private var scheduleDraft = true
+    @State private var captureDetails = false
+    @State private var completedOpen = false
+    @State private var range = "Past day"
+    @State private var start = TaskDates.add(-6)
+    @State private var end = TaskDates.today
     @AppStorage("floating") private var floating = false
     @FocusState private var capturing: Bool
-    var visible: [TaskItem] {
-        store.tasks.filter { selection == "Logbook" ? $0.completed : !$0.completed && (selection != "Today" || $0.today) }
-    }
+    var visible: [TaskItem] { store.tasks.filter { TaskDates.active($0, view: selection, day: selectedDay, bucket: bucket) } }
+    var history: [TaskItem] { store.tasks.filter { TaskDates.history($0, range: range, start: start, end: end, bucket: bucket) }.sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) } }
+    var categories: [String] { Array(Set(store.tasks.compactMap(\.bucket).filter { !$0.isEmpty })).sorted() }
+    private func add() { guard !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }; store.add(draft, date: scheduleDraft ? draftDate : nil, bucket: draftBucket); if store.error == nil { draft = "" }; capturing = true }
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            header
+            tabs
             HStack {
-                HStack(spacing: 10) { BrandMark(); Text("braino").font(.system(size: 23, weight: .bold, design: .rounded)).tracking(-0.8) }
+                Text(selection).font(.system(size: 31, weight: .bold, design: .rounded)).tracking(-1)
                 Spacer()
-                Button { floating.toggle(); NotificationCenter.default.post(name: .init("BrainoFloating"), object: floating) } label: {
-                    Image(systemName: floating ? "pin.fill" : "pin").foregroundStyle(ink).padding(9).background(floating ? sunflower : ink.opacity(0.04), in: Circle())
-                }.buttonStyle(.plain).help("Keep above other windows")
-            }.padding(.bottom, 27)
-            HStack(spacing: 5) {
-                ForEach(["Today", "Inbox", "Logbook"], id: \.self) { tab in
-                    Button { selection = tab } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: tab == "Today" ? "sun.max" : tab == "Inbox" ? "tray" : "checkmark.circle")
-                            Text(tab)
-                        }.font(.system(size: 12, weight: .medium)).padding(.horizontal, 12).padding(.vertical, 9)
-                            .background(selection == tab ? sunflower : .clear, in: Capsule())
-                            .foregroundStyle(selection == tab ? ink : .secondary)
-                    }.buttonStyle(.plain)
-                }
-            }.padding(4).background(ink.opacity(0.045), in: Capsule())
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(selection).font(.system(size: 34, weight: .regular, design: .serif))
-                    Text(selection == "Today" ? Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()) : selection == "Inbox" ? "A little space for everything on your mind." : "Look how far you’ve come.")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Text("\(visible.count)").font(.system(size: 13, weight: .medium)).foregroundStyle(ink).padding(9).background(sunflower.opacity(0.55), in: Circle())
-            }.padding(.top, 28).padding(.bottom, 22)
-            if let error = store.error { Text(error).font(.caption).foregroundStyle(.red).padding(.bottom, 10) }
+                Text("\(visible.count)").font(.system(size: 12, weight: .semibold)).padding(8).background(sunflower.opacity(0.22), in: Circle())
+            }.padding(.top, 25)
+            Text(selection == "Today" ? Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()) : selection == "This week" ? "A little room to plan ahead." : "Good ideas. No rush.")
+                .font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 5).padding(.bottom, 18)
+            if selection == "This week" { weekStrip.padding(.bottom, 16) }
+            HStack {
+                Picker("Category", selection: $bucket) { Text("All categories").tag("All categories"); Text("Uncategorized").tag("Uncategorized"); ForEach(categories, id: \.self) { Text($0).tag($0) } }.labelsHidden().frame(maxWidth: 170)
+                Spacer(); Text("Small steps count.").font(.system(size: 10)).foregroundStyle(.tertiary)
+            }.padding(.bottom, 10)
+            if let error = store.error { Text(error).font(.caption).foregroundStyle(.red) }
             ScrollView {
-                LazyVStack(spacing: 8) {
-                    if visible.isEmpty {
-                        VStack(spacing: 12) {
-                            BrandMark(size: 54).rotationEffect(.degrees(-6)).padding(.bottom, 6)
-                            Text(selection == "Logbook" ? "Small steps add up." : selection == "Today" ? "Make room for what matters." : "A clearer mind starts here.")
-                                .font(.system(size: 18, design: .serif))
-                            Text(selection == "Logbook" ? "Completed tasks will find a home here." : "Add a task below. Take it one thing at a time.")
-                                .font(.system(size: 12)).foregroundStyle(.secondary)
-                        }.frame(maxWidth: .infinity).padding(.vertical, 70)
-                    }
-                    ForEach(visible) { TaskRow(task: $0) }
-                }.padding(.bottom, 12)
+                VStack(alignment: .leading, spacing: 8) {
+                    if visible.isEmpty { empty }
+                    if selection == "This week" && selectedDay == nil {
+                        ForEach(TaskDates.week, id: \.self) { day in
+                            let entries = visible.filter { $0.planned.map { TaskDates.calendar.isDate($0, inSameDayAs: day) } ?? false }
+                            if !entries.isEmpty {
+                                Text(day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())).font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary).padding(.top, 8)
+                                ForEach(entries) { TaskRow(task: $0) }
+                            }
+                        }
+                    } else { ForEach(visible) { TaskRow(task: $0) } }
+                    completedSection.padding(.top, 12)
+                }.padding(.bottom, 16)
             }
-            if selection != "Logbook" {
-                HStack(spacing: 10) {
-                    Image(systemName: "plus").font(.system(size: 12, weight: .bold)).foregroundStyle(ink).padding(7).background(sunflower, in: RoundedRectangle(cornerRadius: 8))
-                    TextField("What’s on your mind?", text: $draft).textFieldStyle(.plain).font(.system(size: 14)).focused($capturing)
-                        .onSubmit { store.add(draft, today: selection == "Today"); draft = "" }
-                    Text("↵").foregroundStyle(.tertiary)
-                }.padding(16).background(.white, in: RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).strokeBorder(sunflower.opacity(0.8), lineWidth: 1.5))
-            }
-            HStack { Text("ONE THING AT A TIME").tracking(1.6); Spacer(); Text("⌃ ⌥ SPACE") }
-                .font(.system(size: 9, weight: .medium)).foregroundStyle(.tertiary).padding(.top, 18)
-        }.padding(25).frame(minWidth: 400, minHeight: 500).background(paper).foregroundStyle(ink).tint(ink).preferredColorScheme(.light)
+            capture
+            HStack {
+                Text("Take it easy. One thing at a time.")
+                Spacer(); Text("⌃ ⌥ Space").font(.system(size: 9))
+            }.font(.system(size: 10, design: .rounded)).foregroundStyle(.tertiary).padding(.top, 16)
+        }.padding(25).frame(minWidth: 410, minHeight: 570).background(paper).foregroundStyle(ink).tint(ink).preferredColorScheme(.light)
             .onReceive(NotificationCenter.default.publisher(for: .init("BrainoCapture"))) { _ in capturing = true }
+    }
+    var header: some View {
+        HStack(spacing: 5) {
+            BrandMark(); Text("braino").font(.system(size: 26, weight: .heavy, design: .rounded)).tracking(-1)
+            Spacer()
+            Button { floating.toggle(); NotificationCenter.default.post(name: .init("BrainoFloating"), object: floating) } label: {
+                Label("Keep on top", systemImage: floating ? "pin.fill" : "pin").font(.system(size: 10)).padding(8).background(floating ? sunflower : .clear, in: RoundedRectangle(cornerRadius: 9))
+            }.buttonStyle(.plain).help("Keep Braino above other windows").accessibilityLabel("Keep Braino above other windows")
+        }.padding(.bottom, 25)
+    }
+    var tabs: some View {
+        HStack(spacing: 3) {
+            ForEach(["Today", "This week", "Someday"], id: \.self) { tab in
+                Button { selection = tab; selectedDay = nil; scheduleDraft = tab != "Someday"; draftDate = TaskDates.today } label: {
+                    Label(tab, systemImage: tab == "Today" ? "sun.max" : tab == "This week" ? "calendar" : "cloud")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded)).padding(.horizontal, 12).padding(.vertical, 9)
+                        .background(selection == tab ? sunflower : .clear, in: Capsule()).foregroundStyle(selection == tab ? ink : .secondary)
+                }.buttonStyle(.plain)
+            }
+        }.padding(4).background(ink.opacity(0.035), in: Capsule())
+    }
+    var weekStrip: some View {
+        HStack(spacing: 3) {
+            Button { selectedDay = nil; draftDate = TaskDates.today } label: { Text("All").font(.system(size: 10)).frame(maxWidth: .infinity, minHeight: 40).background(selectedDay == nil ? ink.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 10)) }.buttonStyle(.plain)
+            ForEach(TaskDates.week, id: \.self) { day in
+                Button { selectedDay = day; draftDate = day } label: {
+                    VStack(spacing: 4) { Text(day.formatted(.dateTime.weekday(.narrow))).font(.system(size: 9)); Text(day.formatted(.dateTime.day())).font(.system(size: 11, weight: .semibold)) }
+                        .frame(maxWidth: .infinity, minHeight: 40).background(selectedDay == day ? sunflower.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 10))
+                }.buttonStyle(.plain).help(day.formatted(date: .complete, time: .omitted))
+            }
+        }
+    }
+    var empty: some View {
+        VStack(spacing: 9) {
+            BrandMark(size: 60).opacity(0.65)
+            Text(selection == "Today" ? "A little breathing room." : selection == "Someday" ? "Let an idea land here." : "A little room in your week.").font(.system(size: 17, weight: .semibold, design: .rounded))
+            Text("Add one thing below. Take it at your pace.").font(.system(size: 11)).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity).padding(.vertical, 28)
+    }
+    var completedSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Divider()
+            DisclosureGroup(isExpanded: $completedOpen) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Picker("Show", selection: $range) { ForEach(["Past day", "Past week", "Past month", "All time", "Custom range"], id: \.self) { Text($0).tag($0) } }.font(.system(size: 10)).padding(.top, 10)
+                    if range == "Custom range" {
+                        DatePicker("From", selection: $start, displayedComponents: .date)
+                        DatePicker("To", selection: $end, displayedComponents: .date)
+                    }
+                    if history.isEmpty { Text(start > end && range == "Custom range" ? "Choose an end date on or after the start date." : "No completed tasks in this range.").font(.system(size: 11)).foregroundStyle(.secondary) }
+                    ForEach(history) { TaskRow(task: $0) }
+                }
+            } label: {
+                HStack {
+                    Text("Completed").font(.system(size: 11, weight: .semibold))
+                    Spacer(); Text("\(store.tasks.filter { $0.completed && TaskDates.matchesBucket($0, bucket) }.count)").font(.system(size: 10))
+                }.foregroundStyle(.secondary)
+            }
+            if store.lastCompleted != nil { HStack { Text("A little lighter.").foregroundStyle(.secondary); Spacer(); Button("Undo") { store.undo() }.buttonStyle(.plain) }.font(.system(size: 10)) }
+        }
+    }
+    var capture: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 11) {
+                Button(action: add) { Image(systemName: "plus").font(.system(size: 12, weight: .bold)).padding(7).background(sunflower, in: RoundedRectangle(cornerRadius: 8)) }.buttonStyle(.plain).accessibilityLabel("Add task")
+                TextField("One thing on your mind…", text: $draft).textFieldStyle(.plain).font(.system(size: 12)).focused($capturing).onSubmit(add)
+                Button { captureDetails.toggle() } label: { Image(systemName: "slider.horizontal.3").foregroundStyle(.secondary) }.buttonStyle(.plain).help("Task date and category")
+            }.padding(13).background(.white, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(sunflower.opacity(0.65), lineWidth: 1.5))
+            if captureDetails {
+                HStack { Toggle("Schedule", isOn: $scheduleDraft); if scheduleDraft { DatePicker("When", selection: $draftDate, displayedComponents: .date).labelsHidden() } }.font(.system(size: 10))
+                TextField("Category · optional (for example, Work)", text: $draftBucket).textFieldStyle(.roundedBorder).font(.system(size: 11))
+            }
+        }
     }
 }
 
@@ -174,12 +312,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var status: NSStatusItem!
     var hotkey: EventHotKeyRef?
     func applicationDidFinishLaunching(_ notification: Notification) {
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 650), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "Braino"; window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false; window.delegate = self
         window.contentView = NSHostingView(rootView: ContentView().environmentObject(store).padding(.top, 20))
-        window.minSize = NSSize(width: 400, height: 530)
-        window.backgroundColor = NSColor(calibratedRed: 0.980, green: 0.969, blue: 0.937, alpha: 1)
+        window.minSize = NSSize(width: 460, height: 650)
+        window.backgroundColor = NSColor(calibratedRed: 249.0/255, green: 248.0/255, blue: 242.0/255, alpha: 1)
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.level = UserDefaults.standard.bool(forKey: "floating") ? .floating : .normal
         if !window.setFrameAutosaveName("BrainoMain") { window.center() }

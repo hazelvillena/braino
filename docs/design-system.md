@@ -1,0 +1,48 @@
+# Braino design system
+
+Braino should feel light, direct and a little tactile. The dissolving pixel brain and rounded lowercase wordmark are the identity. Preserve the supplied artwork and its transparency; do not fill, silhouette, trace, or recolor it.
+
+## Foundations
+
+| Token | Value | Use |
+| --- | --- | --- |
+| Lemon | #F5D928 | Selected planning pill, completion check, add button |
+| Carbon | #191A17 | Text, icons, scratch line |
+| Canvas | #F9F8F2 | Neutral, lightly warm app background |
+| Surface | #FFFFFF | Task cards and capture |
+| Muted | #7D7F75 | Supporting text |
+| Divider | #E9E9DF | Quiet separation |
+| Type | SF Pro Rounded / system rounded sans | Brand, headings, controls, supporting copy |
+| Card radius | 14 px | Tasks and capture |
+| Spacing | 4, 8, 12, 16, 24 px | Repeated rhythm |
+
+Headings are bold rounded sans, never serif. Body text uses medium and regular weights; reserve heavy weight for the wordmark and headings. Avoid tracking-heavy uppercase footers. Footer copy: “Take it easy. One thing at a time.” Yellow stays in small purposeful accents, not large panels or the icon background. The current browser falls back to the available system sans; the native app uses Apple's rounded system font.
+
+## Information architecture
+
+- Today: scheduled today and overdue tasks. No silent disappearance at midnight.
+- This week: Monday–Sunday in local time, grouped by day, with an optional day filter.
+- Someday: undated tasks. It replaces a separate inbox for this small first version.
+- Categories: optional per-task text, none by default. Filter by all, uncategorized, or a category derived from existing tasks. No setup required.
+- Completed: collapsed below open tasks, independent of the planning tab, honoring the category filter. Completion immediately moves the task here after the feedback animation. Reopen via its check.
+- Completed filters: Past day (today), Past week (today + previous six local dates), Past month (today + previous 29 local dates), All time, Custom range (inclusive dates). These are calendar-day ranges, not rolling-hour windows.
+- Legacy completed tasks without a timestamp appear only in All time; never fabricate a completion date.
+- Keep on top: labeled pin control. It controls floating-window behavior on Mac. In the browser it demonstrates state and explains the native behavior.
+
+## Completion feedback
+
+Browser sequence: immediate yellow check with a small settling motion (~170–260 ms); scratch line draws left to right (~240 ms, begins 80 ms after click); row fades after 340 ms; task enters Completed at ~480 ms. A subtle check-local ring reinforces the action, without screen-wide effects, sound, streaks or pressure. Undo remains available for the last completion. The native app uses a check fill, spring settle, line sweep and ~450 ms handoff with Undo. Check and status announce the result without relying only on color.
+
+Reduced motion: respect OS preferences. The browser also exposes a Reduce motion control. In reduced motion the state changes immediately and retains clear static feedback; no delay, scale, ring or movement is required.
+
+## Research and judgment
+
+[NN/g: The Role of Animation and Motion in UX](https://www.nngroup.com/articles/animation-purpose-ux/) recommends brief, unobtrusive motion that communicates feedback and state changes, and warns that irrelevant motion distracts.
+
+[NN/g: Executing UX Animations](https://www.nngroup.com/articles/animation-duration/) recommends defining trigger, transformation, timing and easing, with shorter, subtler feedback for frequent actions. The exact Braino timings are design choices, not experimentally proven optimal durations.
+
+[Deci & Ryan, 2000: The What and Why of Goal Pursuits](https://selfdeterminationtheory.org/SDT/documents/2000_DeciRyan_PIWhatWhy.pdf) discusses autonomy and competence in motivation. This supports a restrained design hypothesis: make the user's progress visible without introducing controlling rewards. It does not establish that a particular task animation releases dopamine or universally “scratches the brain.”
+
+[W3C: Understanding Animation from Interactions](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions) explains supporting user control over nonessential motion. Braino follows OS reduced-motion preferences and keeps its completion signal understandable without animation.
+
+Validate subjective satisfaction by trying repeated completions, including keyboard use and reduced motion. “Satisfying” is a product hypothesis, not a medical or universal psychological claim.
