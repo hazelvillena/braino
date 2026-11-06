@@ -19,7 +19,8 @@ func render(_ size: Int, rounded: Bool) -> NSBitmapImageRep {
     let rect = NSRect(x: inset, y: inset, width: side - 2 * inset, height: side - 2 * inset)
     // Intentionally no fill or clipping: keep all original transparency.
     let ratio = image.size.width / image.size.height
-    let markRect = NSRect(x: rect.minX, y: rect.midY - rect.width / ratio / 2, width: rect.width, height: rect.width / ratio)
+    let width = rect.width * 1.30
+    let markRect = NSRect(x: rect.midX - width / 2, y: rect.midY - width / ratio / 2, width: width, height: width / ratio)
     image.draw(in: markRect, from: .zero, operation: .sourceOver, fraction: 1)
     context.flushGraphics(); NSGraphicsContext.restoreGraphicsState()
     return rep

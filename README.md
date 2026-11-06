@@ -36,3 +36,7 @@ Generate a deterministic interface preview without changing tasks:
 ```sh
 Braino.app/Contents/MacOS/Braino --render-preview /tmp/braino-preview.png
 ```
+
+## Local browser design preview
+
+Run `node preview/server.mjs`, then visit http://localhost:4317. No dependencies or installation needed. The preview supports capture, Today/Inbox/Logbook, notes, and completion with its own browser-local demo data. It is an HTML approximation, not the native SwiftUI renderer; native window pinning and system-wide hotkeys are not available in a browser. The server binds only to 127.0.0.1 and serves only the preview and its icon. Stop with Control-C.

@@ -55,7 +55,7 @@ struct BrandMark: View {
     var size: CGFloat = 36
     var body: some View {
         Group {
-            if let url = Bundle.main.url(forResource: "BrainoMark", withExtension: "png"), let image = NSImage(contentsOf: url) {
+            if let url = Bundle.main.url(forResource: "BrainoIcon", withExtension: "png"), let image = NSImage(contentsOf: url) {
                 Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
             } else {
                 Image(systemName: "square.grid.3x3.fill").resizable().padding(8)
