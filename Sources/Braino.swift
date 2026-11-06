@@ -56,9 +56,9 @@ struct BrandMark: View {
     var body: some View {
         Group {
             if let url = Bundle.main.url(forResource: "BrainoMark", withExtension: "png"), let image = NSImage(contentsOf: url) {
-                Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit).background(sunflower)
+                Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
             } else {
-                Image(systemName: "square.grid.3x3.fill").resizable().padding(8).background(sunflower)
+                Image(systemName: "square.grid.3x3.fill").resizable().padding(8)
             }
         }.frame(width: size, height: size).clipShape(RoundedRectangle(cornerRadius: size * 0.24))
             .accessibilityLabel("Braino")

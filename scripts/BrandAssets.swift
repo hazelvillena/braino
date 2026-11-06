@@ -17,11 +17,7 @@ func render(_ size: Int, rounded: Bool) -> NSBitmapImageRep {
     let side = CGFloat(size)
     let inset = rounded ? side * 0.055 : 0
     let rect = NSRect(x: inset, y: inset, width: side - 2 * inset, height: side - 2 * inset)
-    if rounded { NSBezierPath(roundedRect: rect, xRadius: side * 0.20, yRadius: side * 0.20).addClip() }
-    if rounded {
-        NSColor(calibratedRed: 244.0/255, green: 200.0/255, blue: 74.0/255, alpha: 1).setFill()
-        rect.fill()
-    }
+    // Intentionally no fill or clipping: keep all original transparency.
     let ratio = image.size.width / image.size.height
     let markRect = NSRect(x: rect.minX, y: rect.midY - rect.width / ratio / 2, width: rect.width, height: rect.width / ratio)
     image.draw(in: markRect, from: .zero, operation: .sourceOver, fraction: 1)
