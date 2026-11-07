@@ -347,7 +347,7 @@ struct ContentView: View {
             if selection != "This week" { capture }
             HStack {
                 Text("Log your to do’s.")
-                Spacer(); Text("⌃ ⌥ Space").font(.system(size: 9))
+                Spacer(); Text("⌃ Space").font(.system(size: 9))
             }.font(.system(size: 10, design: .rounded)).foregroundStyle(.tertiary).padding(.top, 16)
         }.padding(20).frame(minWidth: 410, minHeight: 390).background(paper).foregroundStyle(ink).tint(ink).preferredColorScheme(.light)
             .onReceive(NotificationCenter.default.publisher(for: .init("BrainoCapture"))) { _ in
@@ -469,7 +469,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         status.button?.setAccessibilityLabel("Braino tasks")
         let menu = NSMenu()
-        menu.addItem(withTitle: "Show Braino    ⌃⌥Space", action: #selector(show), keyEquivalent: "") .target = self
+        menu.addItem(withTitle: "Show Braino    ⌃Space", action: #selector(show), keyEquivalent: "") .target = self
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Quit Braino", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         status.menu = menu
@@ -479,7 +479,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let delegate = Unmanaged<AppDelegate>.fromOpaque(pointer).takeUnretainedValue()
             DispatchQueue.main.async { delegate.show() }; return noErr
         }, 1, &event, Unmanaged.passUnretained(self).toOpaque(), nil)
-        let result = RegisterEventHotKey(UInt32(kVK_Space), UInt32(controlKey | optionKey), EventHotKeyID(signature: 0x53544C4C, id: 1), GetApplicationEventTarget(), 0, &hotkey)
+        let result = RegisterEventHotKey(UInt32(kVK_Space), UInt32(controlKey), EventHotKeyID(signature: 0x53544C4C, id: 1), GetApplicationEventTarget(), 0, &hotkey)
         if result != noErr { store.error = "Shortcut unavailable. Use the menu bar to open Braino." }
         NotificationCenter.default.addObserver(forName: .init("BrainoFloating"), object: nil, queue: .main) { [weak self] note in self?.window.level = (note.object as? Bool == true) ? .floating : .normal }
         show()

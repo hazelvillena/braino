@@ -13,7 +13,7 @@ B R A I N O
 One thing at a time.
 
 Drag Braino to Applications, then open it.
-Control–Option–Space brings your tasks forward.
+Control–Space brings your tasks forward.
 Use the pin to keep Braino above other windows.
 
 Requires Apple Silicon and macOS 14 or later.

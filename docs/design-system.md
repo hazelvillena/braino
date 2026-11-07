@@ -73,7 +73,7 @@ The notes control is an icon-only chevron immediately before the ellipsis. Openi
 
 The category filter sits just before the task count. The browser uses a small custom white menu with checked selection, rounded corners, keyboard navigation and Escape/click-outside dismissal. Due/category controls remain collapsed by default, reset after logging or switching views, and use white surfaces when opened.
 
-Copy: “Log your to do’s.” The shortcut focuses capture without a click. Browser load/window focus and Control–Option–Space focus the relevant capture input; native activation defers the focus request until its window is ready and resets the focus binding before restoring it. Weekly capture focuses today's inline field.
+Copy: “Log your to do’s.” The shortcut focuses capture without a click. Browser load/window focus and Control–Space focus the relevant capture input; native activation defers the focus request until its window is ready and resets the focus binding before restoring it. Weekly capture focuses today's inline field.
 
 ## Inline editing and capture outline
 

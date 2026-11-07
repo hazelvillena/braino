@@ -1,6 +1,6 @@
 # Braino
 
-A local Mac task companion: a quiet desktop window, menu bar access, and Control–Option–Space to bring it forward and focus quick capture.
+A local Mac task companion: a quiet desktop window, menu bar access, and Control–Space to bring it forward and focus quick capture.
 
 ## Run
 
