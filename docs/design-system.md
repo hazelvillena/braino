@@ -74,3 +74,11 @@ The notes control is an icon-only chevron immediately before the ellipsis. Openi
 The category filter sits just before the task count. The browser uses a small custom white menu with checked selection, rounded corners, keyboard navigation and Escape/click-outside dismissal. Due/category controls remain collapsed by default, reset after logging or switching views, and use white surfaces when opened.
 
 Copy: “Log your to do’s.” The shortcut focuses capture without a click. Browser load/window focus and Control–Option–Space focus the relevant capture input; native activation defers the focus request until its window is ready and resets the focus binding before restoring it. Weekly capture focuses today's inline field.
+
+## Inline editing and capture outline
+
+Expanded notes are directly editable text in place, with no Edit note link or extra mode. Inline titles and notes persist as typed; the browser restores the pre-edit value on Escape. The structured details form retains Save/Cancel for notes, due date and category, but no longer repeats the Task title field.
+
+Capture placeholder is “add something” in a soft dashed container, including per-day capture. The footer retains “Log your to do’s.” The category trigger reads “All” for the unfiltered state.
+
+Task cards do not shrink within their flex list. Opening the structured editor releases the browser list height cap so the action row stays reachable and its padding is not clipped.

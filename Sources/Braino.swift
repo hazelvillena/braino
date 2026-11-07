@@ -139,10 +139,6 @@ struct TaskEditor: View {
         VStack(alignment: .leading, spacing: 12) {
             Divider().opacity(0.5)
             VStack(alignment: .leading, spacing: 5) {
-                Text("Task").font(.system(size: 10)).foregroundStyle(.secondary)
-                TextField("Task", text: $draft.title).textFieldStyle(.plain).padding(9).background(ink.opacity(0.025), in: RoundedRectangle(cornerRadius: 8))
-            }
-            VStack(alignment: .leading, spacing: 5) {
                 Text("Notes").font(.system(size: 10)).foregroundStyle(.secondary)
                 TextField("Add a little context…", text: $draft.notes, axis: .vertical).lineLimit(2...6).textFieldStyle(.plain).padding(10).background(ink.opacity(0.025), in: RoundedRectangle(cornerRadius: 9))
             }
@@ -191,10 +187,10 @@ struct WeeklyDaySection: View {
             ForEach(entries) { TaskRow(task: $0, compact: true) }
             HStack(spacing: 10) {
                 Image(systemName: "plus").font(.system(size: 12)).foregroundStyle(.tertiary).frame(width: 20)
-                TextField("Log your to do’s.", text: $draft).font(.system(size: 11)).textFieldStyle(.plain).focused($focused).onSubmit(add)
+                TextField("add something", text: $draft).font(.system(size: 11)).textFieldStyle(.plain).focused($focused).onSubmit(add)
                     .accessibilityLabel("Add task for \(day.formatted(.dateTime.weekday(.wide)))")
                 if focused || !draft.isEmpty { Button(action: add) { Image(systemName: "return").font(.system(size: 10)).foregroundStyle(.secondary) }.buttonStyle(.plain).accessibilityLabel("Save task") }
-            }.padding(.vertical, 5)
+            }.padding(.horizontal, 8).padding(.vertical, 6).overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(ink.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
             Divider().opacity(0.6).padding(.top, 5)
         }.padding(.top, 6)
             .onReceive(NotificationCenter.default.publisher(for: .init("BrainoCapture"))) { _ in if TaskDates.calendar.isDateInToday(day) { focused = false; DispatchQueue.main.async { focused = true } } }
@@ -228,7 +224,10 @@ struct TaskRow: View {
                 }.frame(width: 20, height: 20).scaleEffect(finishing ? 1.08 : 1)
             }.buttonStyle(.plain).disabled(finishing).help(task.completed ? "Reopen task" : "Complete task").accessibilityLabel(task.completed ? "Reopen \(task.title)" : "Complete \(task.title)")
             VStack(alignment: .leading, spacing: 6) {
-                Text(task.title)
+                TextField("Task", text: Binding(get: { task.title }, set: { value in
+                    guard var current = store.tasks.first(where: { $0.id == task.id }) else { return }
+                    current.title = value; store.update(current)
+                }), axis: .vertical).textFieldStyle(.plain)
                     .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundStyle(task.completed ? .secondary : ink)
                     .overlay(alignment: .leading) {
@@ -239,15 +238,18 @@ struct TaskRow: View {
                 if expanded {
                     TaskEditor(task: task) { edited in
                         guard var current = store.tasks.first(where: { $0.id == task.id }) else { return }
-                        current.title = edited.title.trimmingCharacters(in: .whitespacesAndNewlines); current.notes = edited.notes; current.dueDate = edited.dueDate
+                        current.notes = edited.notes; current.dueDate = edited.dueDate
                         current.today = false; current.scheduled = edited.planned; current.bucket = edited.bucket?.trimmingCharacters(in: .whitespacesAndNewlines)
                         store.update(current); if store.error == nil { expanded = false }
                     } onCancel: { expanded = false }
                 } else if !task.notes.isEmpty && notesOpen {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(task.notes).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        Button("Edit note") { expanded = true }.buttonStyle(.plain).font(.system(size: 9)).foregroundStyle(.secondary)
-                    }.transition(.opacity.combined(with: .move(edge: .top))).clipped()
+                    TextField("Add a note…", text: Binding(get: { task.notes }, set: { value in
+                        guard var current = store.tasks.first(where: { $0.id == task.id }) else { return }
+                        current.notes = value; store.update(current)
+                    }), axis: .vertical)
+                        .textFieldStyle(.plain).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1...20)
+                        .padding(.vertical, 3).transition(.opacity.combined(with: .move(edge: .top))).clipped()
+
                 }
                 if let category = task.bucket, !category.isEmpty { Text(category).font(.system(size: 10)).foregroundStyle(.secondary) }
                 if let due = task.dueDate { Text("Due \(due.formatted(date: .abbreviated, time: .omitted))").font(.system(size: 10)).foregroundStyle(.secondary) }
@@ -326,7 +328,7 @@ struct ContentView: View {
     var categoryFilter: some View {
                 Picker("Category", selection: Binding(get: { bucket }, set: { value in
                     if value == "__new__" { newCategoryOpen = true } else { bucket = value; draftBucket = ["All categories", "Uncategorized"].contains(value) ? "" : value }
-                })) { Text("All categories").tag("All categories"); Text("Uncategorized").tag("Uncategorized"); ForEach(categories, id: \.self) { Text($0).tag($0) }; Divider(); Text("New category…").tag("__new__") }.labelsHidden().pickerStyle(.menu).font(.system(size: 10)).fixedSize().padding(.horizontal, 5).padding(.vertical, 2).background(ink.opacity(0.025), in: Capsule())
+                })) { Text("All").tag("All categories"); Text("Uncategorized").tag("Uncategorized"); ForEach(categories, id: \.self) { Text($0).tag($0) }; Divider(); Text("New category…").tag("__new__") }.labelsHidden().pickerStyle(.menu).font(.system(size: 10)).fixedSize().padding(.horizontal, 5).padding(.vertical, 2).background(ink.opacity(0.025), in: Capsule())
                     .popover(isPresented: $newCategoryOpen) {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("New category").font(.system(size: 13, weight: .semibold, design: .rounded))
@@ -391,9 +393,9 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 11) {
                 Button(action: add) { Image(systemName: "plus").font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 20, height: 20) }.buttonStyle(.plain).accessibilityLabel("Add task")
-                TextField("Log your to do’s.", text: $draft).textFieldStyle(.plain).font(.system(size: 12)).focused($capturing).onSubmit(add)
+                TextField("add something", text: $draft).textFieldStyle(.plain).font(.system(size: 12)).focused($capturing).onSubmit(add)
                 Button { captureDetails.toggle() } label: { Image(systemName: "slider.horizontal.3").font(.system(size: 11)).foregroundStyle(.tertiary) }.buttonStyle(.plain).help("Optional due date and category")
-            }.padding(.horizontal, 11).padding(.vertical, 9)
+            }.padding(.horizontal, 11).padding(.vertical, 10).background(.white.opacity(0.35), in: RoundedRectangle(cornerRadius: 11)).overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(ink.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
             if captureDetails {
                 HStack(spacing: 5) {
                     if scheduleDraft {

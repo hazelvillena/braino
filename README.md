@@ -44,3 +44,5 @@ Run `node preview/server.mjs`, then visit http://localhost:4317. No dependencies
 See [the design system](docs/design-system.md) for tokens, completion timing, information architecture, research and migration behavior. Run `./scripts/test.sh` for browser model tests and native storage, migration, scheduling and history checks. Browser demo state uses `braino-preview-v2`; existing v1 tasks migrate without inventing dates. Preview data remains separate from native data.
 
 New thoughts go into the active planning view. Due dates are optional and independent of the planning date; assigning a due date does not move a thought to another view. Notes can be expanded or collapsed without opening the full editor.
+
+Task titles and expanded notes can also be edited directly in place and save as typed. Capture uses “add something” in a soft dashed outline. The category filter’s unfiltered label is All.
