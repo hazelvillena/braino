@@ -254,7 +254,6 @@ struct TaskRow: View {
                 if let category = task.bucket, !category.isEmpty { Text(category).font(.system(size: 10)).foregroundStyle(.secondary) }
                 if let due = task.dueDate { Text("Due \(due.formatted(date: .abbreviated, time: .omitted))").font(.system(size: 10)).foregroundStyle(.secondary) }
                 if task.completed { Text(task.completedAt.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Completion date unavailable").font(.system(size: 9)).foregroundStyle(.tertiary) }
-                else if let date = task.planned, date < TaskDates.today { Text("Earlier · \(date.formatted(date: .abbreviated, time: .omitted))").font(.system(size: 9)).foregroundStyle(.secondary) }
             }
             if !task.notes.isEmpty && !expanded {
                 Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) { notesOpen.toggle() } } label: {

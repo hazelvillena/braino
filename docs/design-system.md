@@ -82,3 +82,5 @@ Expanded notes are directly editable text in place, with no Edit note link or ex
 Capture placeholder is “add something” in a soft dashed container, including per-day capture. The footer retains “Log your to do’s.” The category trigger reads “All” for the unfiltered state.
 
 Task cards do not shrink within their flex list. Opening the structured editor releases the browser list height cap so the action row stays reachable and its padding is not clipped.
+
+Open tasks do not show planning/logging date records beneath their titles. Weekly day headings already provide placement context; only explicitly assigned due dates and categories appear as task metadata. Completion dates remain in the Completed history.
