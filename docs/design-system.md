@@ -66,3 +66,11 @@ Quick capture is a quiet plus-and-text line, with Return to save. Capture belong
 Browser view changes fade and settle content by 5 px over 260 ms while smoothly adapting its height; the yellow planning highlight retains its separate continuous slide. Native task groups use an opacity/5 px transition alongside the selected pill spring. Both respect reduced motion.
 
 The category filter lives in the title row as a quiet small control. Notes are collapsed behind a Notes disclosure by default; expand to read the full note or choose Edit note. Task due dates display as explicitly labeled metadata and never change the planning view. Existing scheduled dates remain planning dates; no historical deadline is invented during migration.
+
+## Task controls and capture focus
+
+The notes control is an icon-only chevron immediately before the ellipsis. Opening notes expands the existing panel downward over 280 ms; closing reverses the motion. The native row uses a 260 ms transition. The browser panel remains in the DOM to animate both directions, while collapsed content is inert and hidden from accessibility navigation.
+
+The category filter sits just before the task count. The browser uses a small custom white menu with checked selection, rounded corners, keyboard navigation and Escape/click-outside dismissal. Due/category controls remain collapsed by default, reset after logging or switching views, and use white surfaces when opened.
+
+Copy: “Log your to do’s.” The shortcut focuses capture without a click. Browser load/window focus and Control–Option–Space focus the relevant capture input; native activation defers the focus request until its window is ready and resets the focus binding before restoring it. Weekly capture focuses today's inline field.
