@@ -213,7 +213,7 @@ struct WeeklyDaySection: View {
             }.padding(.horizontal, 8).padding(.vertical, 6).overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(ink.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
             }.padding(.top, 5).transition(.opacity.combined(with: .move(edge: .top)))
             }
-        }.padding(10).background(.white.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
+        }.padding(10).background(.white, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(ink.opacity(0.06), lineWidth: 1))
             .onReceive(NotificationCenter.default.publisher(for: .init("BrainoCapture"))) { _ in if TaskDates.calendar.isDateInToday(day) { open = true; focused = false; DispatchQueue.main.async { focused = true } } }
     }
@@ -286,7 +286,7 @@ struct TaskRow: View {
             Button { expanded.toggle() } label: { Image(systemName: "ellipsis").foregroundStyle(.secondary) }.buttonStyle(.plain).help("Edit notes, date and category")
             Button { store.delete(task.id) } label: { Image(systemName: "trash").font(.system(size: 10)).foregroundStyle(.secondary) }
                 .buttonStyle(.plain).opacity(hovering ? 1 : 0).allowsHitTesting(hovering && !finishing).disabled(finishing).help("Delete task").accessibilityLabel("Delete \(task.title)")
-        }.padding(compact ? 6 : 11).background(finishing ? sunflower.opacity(0.08) : compact ? .clear : .white.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
+        }.padding(compact ? 6 : 11).background(finishing ? sunflower.opacity(0.08) : compact ? .clear : .white, in: RoundedRectangle(cornerRadius: 14))
             .onHover { hovering = $0 }
             .contextMenu { Button("Delete task", role: .destructive) { store.delete(task.id) }.disabled(finishing) }
     }
@@ -326,19 +326,24 @@ struct ContentView: View {
                 Text("\(visible.count)").font(.system(size: 12, weight: .semibold)).padding(8).background(sunflower.opacity(0.22), in: Circle())
             }.padding(.top, 16).padding(.bottom, 8)
             if let error = store.error { Text(error).font(.caption).foregroundStyle(.red) }
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     if visible.isEmpty && selection != "This week" { empty }
                     if selection == "This week" {
                         ForEach(TaskDates.week, id: \.self) { day in
                             let entries = visible.filter { $0.planned.map { TaskDates.calendar.isDate($0, inSameDayAs: day) } ?? false }
-                            WeeklyDaySection(day: day, entries: entries, bucket: bucket)
+                            WeeklyDaySection(day: day, entries: entries, bucket: bucket).id(day)
                         }
                     } else { ForEach(visible) { TaskRow(task: $0) } }
                     completedSection.padding(.top, 10)
-                }.padding(.bottom, 16).id(selection)
+                }.padding(.bottom, selection == "This week" ? 300 : 16).id(selection)
                     .transition(reduceMotion ? .identity : .opacity.combined(with: .offset(y: 5)))
             }.frame(maxHeight: selection == "This week" ? 350 : .infinity)
+                .onChange(of: selection) { _, value in
+                    if value == "This week" { DispatchQueue.main.async { proxy.scrollTo(TaskDates.today, anchor: .top) } }
+                }
+            }
             if selection != "This week" { capture }
             HStack {
                 Text("Log your to do’s.")

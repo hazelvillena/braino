@@ -90,3 +90,5 @@ Open tasks do not show planning/logging date records beneath their titles. Weekl
 The weekly list is capped at 370 px (or 48 vh on smaller browser viewports), with its own scroll region. Native weekly content is capped at 350 pt within the window. Each day is a soft bordered, rounded card; its header toggles the contents with a short height/fade animation. All days start expanded. Browser collapsed-day choices survive task rerenders in the current visit. Capture shortcuts expand today's card when needed and bring its input into view.
 
 Hovering or keyboard-focusing a task reveals a small trash control. Delete removes the task immediately and offers Undo; Undo restores the original task, completion state and list position. Native contextual deletion uses the same reversible path. Completion and deletion share the latest-action Undo slot.
+
+Weekly day cards use the same solid white surface as tasks. Entering This week aligns Today at the top of the scroll viewport while preserving chronological order, so previous days remain above and later days remain below. This is an initial scroll position, not a sticky header.

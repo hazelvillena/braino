@@ -48,3 +48,5 @@ New thoughts go into the active planning view. Due dates are optional and indepe
 Task titles and expanded notes can also be edited directly in place and save as typed. Capture uses “add something” in a soft dashed outline. The category filter’s unfiltered label is All.
 
 This week stays within a compact scroll area. Each day is a rounded card that can be collapsed independently. Hover over a task to reveal Delete; Undo restores it.
+
+The weekly view lands on Today at the top; scroll up for earlier days or down for later days. Day cards and task cards share white surfaces.
