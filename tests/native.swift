@@ -39,3 +39,14 @@ precondition(store.tasks[0].dueDate == TaskDates.add(30))
 store.add("Someday with due", date:nil,bucket:"",dueDate:TaskDates.today)
 precondition(TaskDates.active(store.tasks[0],view:"Someday",day:nil,bucket:"All categories"))
 print("Due-date independence checks passed.")
+
+let beforeDelete = store.tasks[0]
+let countBeforeDelete = store.tasks.count
+store.delete(beforeDelete.id)
+precondition(store.tasks.count == countBeforeDelete - 1)
+precondition(!store.tasks.contains { $0.id == beforeDelete.id })
+store.undo()
+precondition(store.tasks.count == countBeforeDelete)
+precondition(store.tasks[0].id == beforeDelete.id && store.tasks[0].title == beforeDelete.title)
+precondition(TaskStore(url: fixture).tasks[0].id == beforeDelete.id)
+print("Deletion checks passed: removal, exact restoration and persistence.")

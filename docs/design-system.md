@@ -84,3 +84,9 @@ Capture placeholder is “add something” in a soft dashed container, including
 Task cards do not shrink within their flex list. Opening the structured editor releases the browser list height cap so the action row stays reachable and its padding is not clipped.
 
 Open tasks do not show planning/logging date records beneath their titles. Weekly day headings already provide placement context; only explicitly assigned due dates and categories appear as task metadata. Completion dates remain in the Completed history.
+
+## Compact weekly cards and deletion
+
+The weekly list is capped at 370 px (or 48 vh on smaller browser viewports), with its own scroll region. Native weekly content is capped at 350 pt within the window. Each day is a soft bordered, rounded card; its header toggles the contents with a short height/fade animation. All days start expanded. Browser collapsed-day choices survive task rerenders in the current visit. Capture shortcuts expand today's card when needed and bring its input into view.
+
+Hovering or keyboard-focusing a task reveals a small trash control. Delete removes the task immediately and offers Undo; Undo restores the original task, completion state and list position. Native contextual deletion uses the same reversible path. Completion and deletion share the latest-action Undo slot.

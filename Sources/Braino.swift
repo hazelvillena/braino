@@ -49,6 +49,8 @@ final class TaskStore: ObservableObject {
     @Published var tasks: [TaskItem] = []
     @Published var error: String?
     @Published var lastCompleted: UUID?
+    @Published var lastDeleted: TaskItem?
+    private var deletedIndex = 0
     @Published var customCategories: [String] = []
     let url: URL
     init(url: URL? = nil) {
@@ -103,10 +105,19 @@ final class TaskStore: ObservableObject {
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[index].completed.toggle()
         tasks[index].completedAt = tasks[index].completed ? Date() : nil
-        if tasks[index].completed { lastCompleted = id }
+        if tasks[index].completed { lastCompleted = id; lastDeleted = nil }
         save()
     }
+    func delete(_ id: UUID) {
+        guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+        lastDeleted = tasks[index]; deletedIndex = index; lastCompleted = nil
+        tasks.remove(at: index); save()
+    }
     func undo() {
+        if let deleted = lastDeleted {
+            if !tasks.contains(where: { $0.id == deleted.id }) { tasks.insert(deleted, at: min(deletedIndex, tasks.count)) }
+            lastDeleted = nil; save(); return
+        }
         guard let id = lastCompleted, let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[index].completed = false; tasks[index].completedAt = nil; lastCompleted = nil; save()
     }
@@ -169,6 +180,8 @@ struct WeeklyDaySection: View {
     let entries: [TaskItem]
     let bucket: String
     @State private var draft = ""
+    @State private var open = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var focused: Bool
     private func add() {
         guard !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
@@ -177,13 +190,20 @@ struct WeeklyDaySection: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
+            Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) { open.toggle() } } label: {
             HStack(spacing: 8) {
                 Text(TaskDates.calendar.isDateInToday(day) ? "Today" : day.formatted(.dateTime.weekday(.wide)))
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .padding(.horizontal, TaskDates.calendar.isDateInToday(day) ? 5 : 0).padding(.vertical, 3)
                     .background(TaskDates.calendar.isDateInToday(day) ? sunflower.opacity(0.25) : .clear, in: RoundedRectangle(cornerRadius: 5))
                 Text(day.formatted(.dateTime.month(.abbreviated).day())).font(.system(size: 10)).foregroundStyle(.tertiary)
-            }
+                Spacer()
+                Text("\(entries.count)").font(.system(size: 9)).foregroundStyle(.tertiary)
+                Image(systemName: "chevron.down").font(.system(size: 9)).rotationEffect(.degrees(open ? 0 : -90)).foregroundStyle(.secondary)
+            }.contentShape(Rectangle())
+            }.buttonStyle(.plain).accessibilityLabel(day.formatted(.dateTime.weekday(.wide)))
+            if open {
+            VStack(alignment: .leading, spacing: 5) {
             ForEach(entries) { TaskRow(task: $0, compact: true) }
             HStack(spacing: 10) {
                 Image(systemName: "plus").font(.system(size: 12)).foregroundStyle(.tertiary).frame(width: 20)
@@ -191,9 +211,11 @@ struct WeeklyDaySection: View {
                     .accessibilityLabel("Add task for \(day.formatted(.dateTime.weekday(.wide)))")
                 if focused || !draft.isEmpty { Button(action: add) { Image(systemName: "return").font(.system(size: 10)).foregroundStyle(.secondary) }.buttonStyle(.plain).accessibilityLabel("Save task") }
             }.padding(.horizontal, 8).padding(.vertical, 6).overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(ink.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
-            Divider().opacity(0.6).padding(.top, 5)
-        }.padding(.top, 6)
-            .onReceive(NotificationCenter.default.publisher(for: .init("BrainoCapture"))) { _ in if TaskDates.calendar.isDateInToday(day) { focused = false; DispatchQueue.main.async { focused = true } } }
+            }.padding(.top, 5).transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }.padding(10).background(.white.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(ink.opacity(0.06), lineWidth: 1))
+            .onReceive(NotificationCenter.default.publisher(for: .init("BrainoCapture"))) { _ in if TaskDates.calendar.isDateInToday(day) { open = true; focused = false; DispatchQueue.main.async { focused = true } } }
     }
 }
 
@@ -204,6 +226,7 @@ struct TaskRow: View {
     var compact = false
     @State private var expanded = false
     @State private var notesOpen = false
+    @State private var hovering = false
     @State private var finishing = false
     private func finish() {
         guard !finishing else { return }
@@ -261,8 +284,11 @@ struct TaskRow: View {
                 }.buttonStyle(.plain).help(notesOpen ? "Hide notes" : "Show notes").accessibilityLabel("Notes for \(task.title)")
             }
             Button { expanded.toggle() } label: { Image(systemName: "ellipsis").foregroundStyle(.secondary) }.buttonStyle(.plain).help("Edit notes, date and category")
+            Button { store.delete(task.id) } label: { Image(systemName: "trash").font(.system(size: 10)).foregroundStyle(.secondary) }
+                .buttonStyle(.plain).opacity(hovering ? 1 : 0).allowsHitTesting(hovering && !finishing).disabled(finishing).help("Delete task").accessibilityLabel("Delete \(task.title)")
         }.padding(compact ? 6 : 11).background(finishing ? sunflower.opacity(0.08) : compact ? .clear : .white.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
-            .contextMenu { Button("Delete task", role: .destructive) { store.tasks.removeAll { $0.id == task.id }; store.save() } }
+            .onHover { hovering = $0 }
+            .contextMenu { Button("Delete task", role: .destructive) { store.delete(task.id) }.disabled(finishing) }
     }
 }
 
@@ -312,7 +338,7 @@ struct ContentView: View {
                     completedSection.padding(.top, 10)
                 }.padding(.bottom, 16).id(selection)
                     .transition(reduceMotion ? .identity : .opacity.combined(with: .offset(y: 5)))
-            }
+            }.frame(maxHeight: selection == "This week" ? 350 : .infinity)
             if selection != "This week" { capture }
             HStack {
                 Text("Log your to do’s.")
@@ -385,7 +411,7 @@ struct ContentView: View {
                     Spacer(); Text("\(store.tasks.filter { $0.completed && TaskDates.matchesBucket($0, bucket) }.count)").font(.system(size: 10))
                 }.foregroundStyle(.secondary)
             }
-            if store.lastCompleted != nil { HStack { Text("A little lighter.").foregroundStyle(.secondary); Spacer(); Button("Undo") { store.undo() }.buttonStyle(.plain) }.font(.system(size: 10)) }
+            if store.lastCompleted != nil || store.lastDeleted != nil { HStack { Text(store.lastDeleted != nil ? "Task deleted." : "A little lighter.").foregroundStyle(.secondary); Spacer(); Button("Undo") { store.undo() }.buttonStyle(.plain) }.font(.system(size: 10)) }
         }
     }
     var capture: some View {

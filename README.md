@@ -46,3 +46,5 @@ See [the design system](docs/design-system.md) for tokens, completion timing, in
 New thoughts go into the active planning view. Due dates are optional and independent of the planning date; assigning a due date does not move a thought to another view. Notes can be expanded or collapsed without opening the full editor.
 
 Task titles and expanded notes can also be edited directly in place and save as typed. Capture uses “add something” in a soft dashed outline. The category filter’s unfiltered label is All.
+
+This week stays within a compact scroll area. Each day is a rounded card that can be collapsed independently. Hover over a task to reveal Delete; Undo restores it.
