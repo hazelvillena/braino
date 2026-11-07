@@ -11,7 +11,7 @@ Requires macOS 14+ and Apple Command Line Tools. No third-party dependencies.
 open Braino.app
 ```
 
-Enter a task and press Return. Today includes overdue tasks; This week groups Monday–Sunday with day filters; Someday holds undated ideas. The ellipsis opens notes, schedule and an optional category. Complete a task to play a short scratch-off and move it to the Completed dropdown. Filter completion history by day, week, month, all time or inclusive custom dates. Undo restores the last completion. The labeled pin keeps Braino above other apps. Closing the window keeps menu bar access and the shortcut running. Quit from the menu bar.
+Enter a task and press Return. Today includes overdue tasks; This week shows Monday–Sunday with inline capture under every day; Someday holds undated ideas. The ellipsis opens a soft task editor for notes, schedule and an optional category; Save commits the draft and Cancel discards it. New category… is available in the category dropdown. Complete a task to play a short scratch-off and move it to the Completed dropdown. Filter completion history by day, week, month, all time or inclusive custom dates. Undo restores the last completion. The icon-only pin keeps Braino above other apps; hover for “Keep on top.” Closing the window keeps menu bar access and the shortcut running. Quit from the menu bar.
 
 ## Local data and agent integration
 

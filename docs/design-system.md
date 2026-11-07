@@ -21,13 +21,13 @@ Headings are bold rounded sans, never serif. Body text uses medium and regular w
 ## Information architecture
 
 - Today: scheduled today and overdue tasks. No silent disappearance at midnight.
-- This week: Monday–Sunday in local time, grouped by day, with an optional day filter.
+- This week: Monday–Sunday in local time, all seven days in one continuous list, including empty days, each with inline task capture.
 - Someday: undated tasks. It replaces a separate inbox for this small first version.
-- Categories: optional per-task text, none by default. Filter by all, uncategorized, or a category derived from existing tasks. No setup required.
+- Categories: optional per-task text, none by default. Filter by all, uncategorized, or a category. The dropdown includes New category… for lightweight creation; empty categories persist and are selected immediately. No setup required.
 - Completed: collapsed below open tasks, independent of the planning tab, honoring the category filter. Completion immediately moves the task here after the feedback animation. Reopen via its check.
-- Completed filters: Past day (today), Past week (today + previous six local dates), Past month (today + previous 29 local dates), All time, Custom range (inclusive dates). These are calendar-day ranges, not rolling-hour windows.
+- Completed opens with Past week selected. Filters: Past day (today), Past week (today + previous six local dates), Past month (today + previous 29 local dates), All time, Custom range (inclusive dates). These are calendar-day ranges, not rolling-hour windows.
 - Legacy completed tasks without a timestamp appear only in All time; never fabricate a completion date.
-- Keep on top: labeled pin control. It controls floating-window behavior on Mac. In the browser it demonstrates state and explains the native behavior.
+- Keep on top: icon-only pin with a short hover tooltip and an accessible name. It controls floating-window behavior on Mac. In the browser it demonstrates state and explains the native behavior.
 
 ## Completion feedback
 
@@ -46,3 +46,11 @@ Reduced motion: respect OS preferences. The browser also exposes a Reduce motion
 [W3C: Understanding Animation from Interactions](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions) explains supporting user control over nonessential motion. Braino follows OS reduced-motion preferences and keeps its completion signal understandable without animation.
 
 Validate subjective satisfaction by trying repeated completions, including keyboard use and reduced motion. “Satisfying” is a product hypothesis, not a medical or universal psychological claim.
+
+## Refinement: movement and editing
+
+Planning pills share one sliding yellow highlight. Browser transform/width transitions use a 430 ms decelerating curve, preserving the highlight element through task renders. Native tabs use a matched-geometry capsule with a 430 ms spring. Reduced motion disables the movement.
+
+Task details are drafts. A small Save action commits title, notes, schedule and category together and closes the editor. Cancel discards changes. Browser drafts survive task-list rerenders until saved or cancelled. Soft neutral fields use minimal borders, quieter labels, and visible focus feedback. Command-Enter saves.
+
+The weekly list shows all seven day sections, including empty days, without a second row of day toggles. Each day has a quiet Add a task… field; Return saves to that day and leaves focus there. Category-filtered inline capture inherits the chosen category.
