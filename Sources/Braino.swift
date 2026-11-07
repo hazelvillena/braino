@@ -247,7 +247,7 @@ struct TaskRow: View {
                 else if let date = task.planned, date < TaskDates.today { Text("Earlier · \(date.formatted(date: .abbreviated, time: .omitted))").font(.system(size: 9)).foregroundStyle(.secondary) }
             }
             Button { expanded.toggle() } label: { Image(systemName: "ellipsis").foregroundStyle(.secondary) }.buttonStyle(.plain).help("Edit notes, date and category")
-        }.padding(compact ? 7 : 14).background(finishing ? sunflower.opacity(0.08) : compact ? .clear : .white.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
+        }.padding(compact ? 6 : 11).background(finishing ? sunflower.opacity(0.08) : compact ? .clear : .white.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
             .contextMenu { Button("Delete task", role: .destructive) { store.tasks.removeAll { $0.id == task.id }; store.save() } }
     }
 }
@@ -280,12 +280,10 @@ struct ContentView: View {
             header
             tabs
             HStack {
-                Text(selection).font(.system(size: 31, weight: .bold, design: .rounded)).tracking(-1)
+                Text(selection).font(.system(size: 19, weight: .semibold, design: .rounded)).tracking(-0.4)
                 Spacer()
                 Text("\(visible.count)").font(.system(size: 12, weight: .semibold)).padding(8).background(sunflower.opacity(0.22), in: Circle())
-            }.padding(.top, 25)
-            Text(selection == "Today" ? Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()) : selection == "This week" ? "A little room to plan ahead." : "Good ideas. No rush.")
-                .font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 5).padding(.bottom, 18)
+            }.padding(.top, 16).padding(.bottom, 8)
             HStack {
                 Picker("Category", selection: Binding(get: { bucket }, set: { value in
                     if value == "__new__" { newCategoryOpen = true } else { bucket = value; draftBucket = ["All categories", "Uncategorized"].contains(value) ? "" : value }
@@ -298,7 +296,7 @@ struct ContentView: View {
                         }.padding(16).frame(width: 230)
                     }
                 Spacer()
-            }.padding(.bottom, 10)
+            }.padding(.bottom, 7)
             if let error = store.error { Text(error).font(.caption).foregroundStyle(.red) }
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
@@ -309,7 +307,7 @@ struct ContentView: View {
                             WeeklyDaySection(day: day, entries: entries, bucket: bucket)
                         }
                     } else { ForEach(visible) { TaskRow(task: $0) } }
-                    completedSection.padding(.top, 12)
+                    completedSection.padding(.top, 10)
                 }.padding(.bottom, 16)
             }
             if selection != "This week" { capture }
@@ -317,7 +315,7 @@ struct ContentView: View {
                 Text("Take it easy. One thing at a time.")
                 Spacer(); Text("⌃ ⌥ Space").font(.system(size: 9))
             }.font(.system(size: 10, design: .rounded)).foregroundStyle(.tertiary).padding(.top, 16)
-        }.padding(25).frame(minWidth: 410, minHeight: 570).background(paper).foregroundStyle(ink).tint(ink).preferredColorScheme(.light)
+        }.padding(20).frame(minWidth: 410, minHeight: 390).background(paper).foregroundStyle(ink).tint(ink).preferredColorScheme(.light)
             .onReceive(NotificationCenter.default.publisher(for: .init("BrainoCapture"))) { _ in capturing = true }
     }
     private func createCategory() {
@@ -325,23 +323,23 @@ struct ContentView: View {
     }
     var header: some View {
         HStack(spacing: 5) {
-            BrandMark(); Text("braino").font(.system(size: 26, weight: .heavy, design: .rounded)).tracking(-1)
+            BrandMark(size: 36); Text("braino").font(.system(size: 26, weight: .heavy, design: .rounded)).tracking(-1)
             Spacer()
             Button { floating.toggle(); NotificationCenter.default.post(name: .init("BrainoFloating"), object: floating) } label: {
                 Image(systemName: floating ? "pin.fill" : "pin").font(.system(size: 10)).padding(8).background(floating ? sunflower : .clear, in: RoundedRectangle(cornerRadius: 9))
             }.buttonStyle(.plain).help("Keep on top").accessibilityLabel("Keep on top")
-        }.padding(.bottom, 25)
+        }.padding(.bottom, 14)
     }
     var tabs: some View {
         HStack(spacing: 3) {
             ForEach(["Today", "This week", "Someday"], id: \.self) { tab in
                 Button { withAnimation(reduceMotion ? nil : .spring(response: 0.43, dampingFraction: 0.85)) { selection = tab }; scheduleDraft = tab != "Someday"; draftDate = TaskDates.today } label: {
                     Label(tab, systemImage: tab == "Today" ? "sun.max" : tab == "This week" ? "calendar" : "cloud")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded)).padding(.horizontal, 12).padding(.vertical, 9)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded)).padding(.horizontal, 11).padding(.vertical, 6)
                         .background { if selection == tab { Capsule().fill(sunflower).matchedGeometryEffect(id: "planning-pill", in: pillAnimation) } }.foregroundStyle(selection == tab ? ink : .secondary)
                 }.buttonStyle(.plain)
             }
-        }.padding(4).background(ink.opacity(0.035), in: Capsule())
+        }.padding(3).background(ink.opacity(0.035), in: Capsule())
     }
     var empty: some View {
         VStack(spacing: 9) {
@@ -373,18 +371,36 @@ struct ContentView: View {
         }
     }
     var capture: some View {
-        VStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 11) {
-                Button(action: add) { Image(systemName: "plus").font(.system(size: 12, weight: .bold)).padding(7).background(sunflower, in: RoundedRectangle(cornerRadius: 8)) }.buttonStyle(.plain).accessibilityLabel("Add task")
-                TextField("One thing on your mind…", text: $draft).textFieldStyle(.plain).font(.system(size: 12)).focused($capturing).onSubmit(add)
-                Button { captureDetails.toggle() } label: { Image(systemName: "slider.horizontal.3").foregroundStyle(.secondary) }.buttonStyle(.plain).help("Task date and category")
-            }.padding(13).background(.white, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(sunflower.opacity(0.65), lineWidth: 1.5))
+                Button(action: add) { Image(systemName: "plus").font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 20, height: 20) }.buttonStyle(.plain).accessibilityLabel("Add task")
+                TextField("Add a task…", text: $draft).textFieldStyle(.plain).font(.system(size: 12)).focused($capturing).onSubmit(add)
+                Button { captureDetails.toggle() } label: { Image(systemName: "slider.horizontal.3").font(.system(size: 11)).foregroundStyle(.tertiary) }.buttonStyle(.plain).help("Task date and category")
+            }.padding(.horizontal, 11).padding(.vertical, 9)
             if captureDetails {
-                HStack { Toggle("Schedule", isOn: $scheduleDraft); if scheduleDraft { DatePicker("When", selection: $draftDate, displayedComponents: .date).labelsHidden() } }.font(.system(size: 10))
-                TextField("Category · optional (for example, Work)", text: $draftBucket).textFieldStyle(.roundedBorder).font(.system(size: 11))
+                HStack(spacing: 5) {
+                    captureChip("Today", date: TaskDates.today)
+                    captureChip("Tomorrow", date: TaskDates.add(1))
+                    captureChip("Someday", date: nil)
+                    Menu {
+                        DatePicker("Choose date", selection: $draftDate, displayedComponents: .date).onChange(of: draftDate) { _, _ in scheduleDraft = true }
+                    } label: { Image(systemName: "calendar").font(.system(size: 10)).foregroundStyle(.secondary) }.menuStyle(.borderlessButton).fixedSize()
+                    Menu {
+                        Button("No category") { draftBucket = "" }
+                        ForEach(categories, id: \.self) { name in Button(name) { draftBucket = name } }
+                        Divider(); Button("New category…") { newCategoryOpen = true }
+                    } label: { Text(draftBucket.isEmpty ? "No category" : draftBucket).font(.system(size: 9)) }.menuStyle(.borderlessButton).fixedSize()
+                }.padding(.leading, 40).padding(.bottom, 3)
             }
         }
     }
+    private func captureChip(_ title: String, date: Date?) -> some View {
+        let active = date == nil ? !scheduleDraft : scheduleDraft && TaskDates.calendar.isDate(date!, inSameDayAs: draftDate)
+        return Button { scheduleDraft = date != nil; if let date { draftDate = date }; capturing = true } label: {
+            Text(title).font(.system(size: 9)).padding(.horizontal, 7).padding(.vertical, 5).background(active ? sunflower.opacity(0.22) : ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 6))
+        }.buttonStyle(.plain)
+    }
+
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -393,11 +409,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var status: NSStatusItem!
     var hotkey: EventHotKeyRef?
     func applicationDidFinishLaunching(_ notification: Notification) {
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 560), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "Braino"; window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false; window.delegate = self
         window.contentView = NSHostingView(rootView: ContentView().environmentObject(store).padding(.top, 20))
-        window.minSize = NSSize(width: 460, height: 650)
+        window.minSize = NSSize(width: 440, height: 460)
         window.backgroundColor = NSColor(calibratedRed: 249.0/255, green: 248.0/255, blue: 242.0/255, alpha: 1)
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.level = UserDefaults.standard.bool(forKey: "floating") ? .floating : .normal

@@ -54,3 +54,9 @@ Planning pills share one sliding yellow highlight. Browser transform/width trans
 Task details are drafts. A small Save action commits title, notes, schedule and category together and closes the editor. Cancel discards changes. Browser drafts survive task-list rerenders until saved or cancelled. Soft neutral fields use minimal borders, quieter labels, and visible focus feedback. Command-Enter saves.
 
 The weekly list shows all seven day sections, including empty days, without a second row of day toggles. Each day has a quiet Add a task… field; Return saves to that day and leaves focus there. Category-filtered inline capture inherits the chosen category.
+
+## Compact shortcut panel
+
+The wordmark is the largest text. View labels are 19 px semibold, planning pills use 10.5–11 px labels and 6 px vertical padding, and explanatory subtitles are removed. Task cards are compact with a 44 px minimum in the browser. The browser's active task list scrolls independently for long lists; the native capture line stays outside the task scroll region so shortcut focus does not scroll the list to the bottom.
+
+Quick capture is a quiet plus-and-text line, with Return to save. Optional scheduling uses Today / Tomorrow / Someday chips, a date picker and a category picker. These controls stay hidden until opened. Category and date metadata do not block capture.
