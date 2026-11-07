@@ -59,4 +59,10 @@ The weekly list shows all seven day sections, including empty days, without a se
 
 The wordmark is the largest text. View labels are 19 px semibold, planning pills use 10.5–11 px labels and 6 px vertical padding, and explanatory subtitles are removed. Task cards are compact with a 44 px minimum in the browser. The browser's active task list scrolls independently for long lists; the native capture line stays outside the task scroll region so shortcut focus does not scroll the list to the bottom.
 
-Quick capture is a quiet plus-and-text line, with Return to save. Optional scheduling uses Today / Tomorrow / Someday chips, a date picker and a category picker. These controls stay hidden until opened. Category and date metadata do not block capture.
+Quick capture is a quiet plus-and-text line, with Return to save. Capture belongs to the selected planning view. Its optional details contain a clearly labeled Due date and category picker, hidden until opened. There are no additional planning pills in capture. Due date is independent of planning placement and starts unset. Category and date metadata do not block capture.
+
+## View flow and secondary details
+
+Browser view changes fade and settle content by 5 px over 260 ms while smoothly adapting its height; the yellow planning highlight retains its separate continuous slide. Native task groups use an opacity/5 px transition alongside the selected pill spring. Both respect reduced motion.
+
+The category filter lives in the title row as a quiet small control. Notes are collapsed behind a Notes disclosure by default; expand to read the full note or choose Edit note. Task due dates display as explicitly labeled metadata and never change the planning view. Existing scheduled dates remain planning dates; no historical deadline is invented during migration.

@@ -11,7 +11,7 @@ Requires macOS 14+ and Apple Command Line Tools. No third-party dependencies.
 open Braino.app
 ```
 
-Enter a task and press Return. Today includes overdue tasks; This week shows Monday–Sunday with inline capture under every day; Someday holds undated ideas. The ellipsis opens a soft task editor for notes, schedule and an optional category; Save commits the draft and Cancel discards it. New category… is available in the category dropdown. Complete a task to play a short scratch-off and move it to the Completed dropdown. Filter completion history by day, week, month, all time or inclusive custom dates. Undo restores the last completion. The icon-only pin keeps Braino above other apps; hover for “Keep on top.” Closing the window keeps menu bar access and the shortcut running. Quit from the menu bar.
+Enter a task and press Return. Today includes overdue tasks; This week shows Monday–Sunday with inline capture under every day; Someday holds undated ideas. The ellipsis opens a soft task editor for notes, schedule and an optional category and due date; Save commits the draft and Cancel discards it. New category… is available in the category dropdown. Complete a task to play a short scratch-off and move it to the Completed dropdown. Filter completion history by day, week, month, all time or inclusive custom dates. Undo restores the last completion. The icon-only pin keeps Braino above other apps; hover for “Keep on top.” Closing the window keeps menu bar access and the shortcut running. Quit from the menu bar.
 
 ## Local data and agent integration
 
@@ -42,3 +42,5 @@ Run `node preview/server.mjs`, then visit http://localhost:4317. No dependencies
 ## Design and verification
 
 See [the design system](docs/design-system.md) for tokens, completion timing, information architecture, research and migration behavior. Run `./scripts/test.sh` for browser model tests and native storage, migration, scheduling and history checks. Browser demo state uses `braino-preview-v2`; existing v1 tasks migrate without inventing dates. Preview data remains separate from native data.
+
+New thoughts go into the active planning view. Due dates are optional and independent of the planning date; assigning a due date does not move a thought to another view. Notes can be expanded or collapsed without opening the full editor.
