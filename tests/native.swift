@@ -66,3 +66,8 @@ do {
  fatalError("Duplicate IDs must be rejected")
 } catch DesktopBridge.Failure.invalidTask { }
 print("Desktop bridge checks passed: JSON validity, complete data round-trip, existing creation dates and duplicate rejection.")
+
+let reversedRows = Array((decodedState["tasks"] as! [[String: Any]]).reversed())
+let reorderedBridge = try DesktopBridge.tasks(reversedRows, existing: store.tasks)
+precondition(reorderedBridge.map(\.id) == Array(store.tasks.map(\.id).reversed()))
+print("Native order preservation check passed.")

@@ -100,3 +100,9 @@ Hovering or keyboard-focusing a task reveals a small trash control. Delete remov
 Weekly day cards use the same solid white surface as tasks. Entering This week aligns Today at the top of the scroll viewport while preserving chronological order, so previous days remain above and later days remain below. This is an initial scroll position, not a sticky header.
 
 The desktop default width equals its minimum, 410 pt. Control–Space toggles an active, visible window off; from another app or a hidden state it brings Braino forward and focuses capture. Delayed page readiness or focus callbacks never reopen a window the user has hidden.
+
+## Drag ordering
+
+An unobtrusive hover/focus grip sits before each open task's check circle. Dragging uses pointer capture for consistent browser/WebKit behavior, a lifted ghost, an insertion line and edge autoscrolling inside the compact list. Normal title/note editing never starts a drag. Empty or collapsed weekly day cards accept a task and open after a successful drop. Escape cancels without modifying data.
+
+Preferred order is the persisted task-array order, preserved through the native bridge. Completed history keeps its completion-date ordering. Category-filtered moves preserve unrelated tasks and their metadata. Moving between days updates only the planning date, never the due date. Undo restores prior placement/order while preserving later text edits and newly captured tasks. Keyboard alternative: focus the grip, then Option–Up/Down.

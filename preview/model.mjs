@@ -8,3 +8,23 @@ export function completedTasks(tasks, range, start, end, bucket, now = new Date(
 export function toggleTask(task, now=new Date()) { return {...task,completed:!task.completed,completedAt:task.completed?null:now.toISOString()}; }
 
 export function captureTask(title, view, {dueDate=null,bucket='',day=null}={}, now=new Date()) { return {id:crypto.randomUUID(),title:title.trim(),notes:'',date:view==='Someday'?null:(day||dayKey(now)),dueDate,bucket,completed:false,completedAt:null}; }
+
+export function moveTask(tasks, id, {targetId=null, after=false, date=undefined}={}) {
+  const source=tasks.find(t=>t.id===id);
+  if(!source || source.completed || targetId===id) return tasks;
+  const target=targetId?tasks.find(t=>t.id===targetId):null;
+  if(targetId && (!target || target.completed)) return tasks;
+  if(!targetId && date===undefined) return tasks;
+  const result=tasks.filter(t=>t.id!==id);
+  const moved=date===undefined?source:{...source,date};
+  let index;
+  if(target){index=result.findIndex(t=>t.id===targetId)+(after?1:0)}
+  else {const siblings=result.map((t,i)=>({t,i})).filter(({t})=>!t.completed&&t.date===date);index=siblings.length?siblings.at(-1).i+1:result.length}
+  result.splice(index,0,moved);
+  return result;
+}
+
+export function restoreTaskOrder(tasks, order, movedId, previousDate) {
+  const ranks=new Map(order.map((id,index)=>[id,index]));
+  return tasks.map(t=>t.id===movedId?{...t,date:previousDate}:t).sort((a,b)=>(ranks.get(a.id)??Infinity)-(ranks.get(b.id)??Infinity));
+}
