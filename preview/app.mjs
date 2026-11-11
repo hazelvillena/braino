@@ -6,7 +6,7 @@ const demo=()=>[{id:crypto.randomUUID(),title:'Make space for a good idea',date:
 const nativeData=window.brainoNativeData;
 if(nativeData)document.documentElement.classList.add('desktop');
 let tasks;if(nativeData){tasks=normalize(nativeData.tasks||[])}else{try{const stored=localStorage.getItem(key)||localStorage.getItem('braino-preview-v1');if(stored)tasks=normalize(JSON.parse(stored))}catch{}if(!Array.isArray(tasks))tasks=demo()}
-let draggedTaskId=null;
+let draggedTaskId=null,pointerReorder=null;
 let view='Today',day=null,bucket='all',expanded=new Set(),pending=new Map(),lastUndo=null;
 let customCategories=nativeData?.categories||[];if(!nativeData){try{customCategories=JSON.parse(localStorage.getItem('braino-preview-categories')||'[]');if(!Array.isArray(customCategories))customCategories=[]}catch{}}
 const editDrafts=new Map(), inlineDrafts=new Map(), notesOpen=new Set(), collapsedDays=new Set();
@@ -62,7 +62,7 @@ function weeklyDay(date,entries){
  const form=document.createElement('form');form.className='inline-add';const plus=document.createElement('span');plus.textContent='+';plus.setAttribute('aria-hidden','true');const input=document.createElement('input');input.placeholder='add something';input.setAttribute('aria-label','Add task for '+formatDate(date));input.dataset.day=date;input.value=inlineDrafts.get(date)||'';input.maxLength=500;input.oninput=()=>inlineDrafts.set(date,input.value);const button=document.createElement('button');button.type='submit';button.textContent='↵';button.setAttribute('aria-label','Save task for '+formatDate(date));form.append(plus,input,button);
  form.onsubmit=e=>{e.preventDefault();const title=input.value.trim();if(!title)return;tasks.push(captureTask(title,'This week',{day:date,bucket:bucket==='all'||bucket==='none'?'':bucket}));inlineDrafts.delete(date);save();render();document.querySelector(`.inline-add input[data-day="${date}"]`)?.focus();announce('Added to '+formatDate(date,{weekday:'long'})+'.')};inner.append(form);return section;
 }
-function render(){refreshBuckets();renderTabs();$('h1').textContent=view;$('.days').hidden=true;
+function render(){if(pointerReorder)endPointerReorder(false);refreshBuckets();renderTabs();$('h1').textContent=view;$('.days').hidden=true;
 const shown=activeTasks(tasks,view,null,bucket);$('.count').textContent=shown.length;const list=$('.tasks');list.replaceChildren();list.classList.toggle('weekly',view==='This week');$('.capture-wrap').hidden=view==='This week';
 if(view==='This week'){for(const date of weekDays())list.append(weeklyDay(date,shown.filter(t=>t.date===date)))}else for(const t of shown)list.append(row(t));
 if(!shown.length&&view!=='This week'){const empty=document.createElement('div');empty.className='empty';const img=document.createElement('img');img.src='/icon.png';img.alt='';const h=document.createElement('h2');h.textContent=view==='Today'?'A little breathing room.':'Let an idea land here.';const p=document.createElement('p');p.textContent='Add one thing below. Take it at your pace.';empty.append(img,h,p);list.append(empty)}renderHistory();if(view==='This week')requestAnimationFrame(layoutWeekTail);}
@@ -96,7 +96,7 @@ if(nativeData){$('.pin').classList.toggle('active',!!nativeData.floating);$('.pi
 if(nativeData){let queued=false;const reportLayout=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;const height=$('.window').getBoundingClientRect().height+$('.status').getBoundingClientRect().height;window.webkit.messageHandlers.braino.postMessage({type:'layout',height})})};new ResizeObserver(reportLayout).observe($('.window'));new ResizeObserver(reportLayout).observe($('.status'));reportLayout()}
 
 function clearDropMarks(){for(const el of document.querySelectorAll('.drop-before,.drop-after,.day-drop'))el.classList.remove('drop-before','drop-after','day-drop')}
-function finishMove(id,options){const source=tasks.find(t=>t.id===id);if(!source)return;const previous={kind:'move',id,order:tasks.map(t=>t.id),date:source.date};const result=moveTask(tasks,id,options);if(result===tasks)return;tasks=result;lastUndo=previous;save();render();$('.status button').hidden=false;announce('Task moved.');clearDropMarks()}
+function finishMove(id,options,animation={}){const source=tasks.find(t=>t.id===id);if(!source)return;const previous={kind:'move',id,order:tasks.map(t=>t.id),date:source.date};const result=moveTask(tasks,id,options);if(result===tasks)return;const before=animation.before||captureDragLayout();tasks=result;lastUndo=previous;save();render();animateDragLayout(before,animation.from?id:null);settleDraggedTask(id,animation.from);$('.status button').hidden=false;announce('Task moved.');clearDropMarks()}
 function autoScrollDrag(y){const list=$('.tasks');const rect=list.getBoundingClientRect();if(y<rect.top+30)list.scrollTop-=12;else if(y>rect.bottom-30)list.scrollTop+=12}
 function dragHandle(task,item){
  const handle=document.createElement('button');handle.type='button';handle.className='drag-handle';handle.draggable=false;handle.onpointerdown=e=>startPointerReorder(e,task,item,handle);handle.title='Drag to reorder · Option + ↑ / ↓';handle.setAttribute('aria-label','Move '+task.title);handle.innerHTML='<svg viewBox="0 0 12 20" aria-hidden="true"><path d="M4 5h.01M8 5h.01M4 10h.01M8 10h.01M4 15h.01M8 15h.01"/></svg>';
@@ -104,19 +104,78 @@ function dragHandle(task,item){
  return handle;
 }
 
-let pointerReorder=null;
+function dragLayoutKey(node){return node.classList.contains('week-day')?'day:'+node.querySelector('.day-heading').dataset.day:'task:'+node.dataset.id}
+function captureDragLayout(){
+ const positions=new Map();for(const node of document.querySelectorAll('.tasks .week-day,.tasks .task:not(.is-dragging)')){const rect=node.getBoundingClientRect();positions.set(dragLayoutKey(node),{top:rect.top,left:rect.left})}return positions;
+}
+function animateDragLayout(before,skipId=null){
+ if(reduce())return;
+ const nodes=[...document.querySelectorAll('.tasks .week-day,.tasks .task:not(.is-dragging)')];
+ for(const node of nodes)for(const animation of node.getAnimations())animation.cancel();
+ const after=new Map(nodes.map(node=>[dragLayoutKey(node),node.getBoundingClientRect()]));
+ for(const node of nodes){const key=dragLayoutKey(node),first=before.get(key),last=after.get(key);if(!first||!last||key==='task:'+skipId)continue;let dx=first.left-last.left,dy=first.top-last.top;
+  if(node.classList.contains('task')){const day=node.closest('.week-day');if(day){const parentKey=dragLayoutKey(day),oldParent=before.get(parentKey),newParent=after.get(parentKey);if(oldParent&&newParent){dx-=oldParent.left-newParent.left;dy-=oldParent.top-newParent.top}}}
+  if(Math.abs(dx)+Math.abs(dy)>0.5)node.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{duration:240,easing:'cubic-bezier(.22,1,.36,1)'});
+ }
+}
+function settleDraggedTask(id,from){
+ const node=document.querySelector(`.tasks [data-id="${id}"]`);if(!node)return;
+ if(!reduce()&&from){const to=node.getBoundingClientRect();node.animate([{transform:`translate(${from.left-to.left}px,${from.top-to.top}px) scale(${from.width/to.width})`,boxShadow:'0 10px 26px #26331b20'},{transform:'translate(0,0) scale(1)',boxShadow:'0 0 0 #26331b00'}],{duration:280,easing:'cubic-bezier(.2,.8,.2,1)'})}
+ node.classList.add('just-placed');setTimeout(()=>node.classList.remove('just-placed'),650);
+}
+function makeDropGap(height){const gap=document.createElement('div');gap.className='reorder-placeholder';gap.style.height=height+'px';gap.setAttribute('aria-hidden','true');gap.innerHTML='<span class="drop-gap-dot"></span><span>Place here</span>';return gap}
+function pointInside(rect,x,y){return x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom}
 function pointerDestination(x,y,id){
- const hit=document.elementFromPoint(x,y),row=hit?.closest('.tasks .task:not(.completed)');
- if(row){if(row.dataset.id===id)return null;const rect=row.getBoundingClientRect();const target=tasks.find(t=>t.id===row.dataset.id);if(!target)return null;return {node:row,options:{targetId:target.id,after:y>=rect.top+rect.height/2,...(view==='This week'?{date:target.date}:{})}}}
- const day=hit?.closest('.week-day');if(day){const date=day.querySelector('.day-heading')?.dataset.day;if(date)return {node:day,options:{date}}}
+ const s=pointerReorder;if(!s)return null;
+ // Hold a slot while the pointer sits in it; moving neighbors never makes it jitter.
+ if(pointInside(s.gap.getBoundingClientRect(),x,y))return s.destination;
+ const list=$('.tasks');if(!pointInside(list.getBoundingClientRect(),x,y))return null;
+ let parent=list,day=null,date;
+ if(view==='This week'){
+  day=[...list.querySelectorAll('.week-day')].find(node=>pointInside(node.getBoundingClientRect(),x,y));if(!day)return null;
+  date=day.querySelector('.day-heading').dataset.day;
+  const panel=day.querySelector('.day-panel');
+  if(!panel.classList.contains('open'))return {key:'day:'+date,parent:day,before:panel,node:day,options:{date}};
+  parent=day.querySelector('.day-inner');
+ }
+ const rows=[...parent.querySelectorAll(':scope > .task:not(.completed)')].filter(node=>node.dataset.id!==id);
+ const next=rows.find(node=>{const rect=node.getBoundingClientRect();return y<rect.top+rect.height/2});
+ const target=next||rows.at(-1);
+ if(target){const after=!next;return {key:`${date||''}:${target.dataset.id}:${after}`,parent,before:after?target.nextSibling:target,node:target,options:{targetId:target.dataset.id,after,...(date?{date}:{})}}}
+ if(day)return {key:'day:'+date,parent,before:parent.querySelector('.inline-add'),node:day,options:{date}};
  return null;
 }
-function updatePointerDrop(){if(!pointerReorder?.active)return;const s=pointerReorder;clearDropMarks();s.destination=pointerDestination(s.x,s.y,s.id);if(s.destination){const {node,options}=s.destination;node.classList.add(node.classList.contains('week-day')?'day-drop':options.after?'drop-after':'drop-before')}}
-function endPointerReorder(commit){const s=pointerReorder;if(!s)return;pointerReorder=null;cancelAnimationFrame(s.frame);s.ghost?.remove();s.item.classList.remove('is-dragging');document.body.classList.remove('is-reordering');try{s.handle.releasePointerCapture(s.pointer)}catch{}draggedTaskId=null;clearDropMarks();if(commit&&s.active&&s.destination){if(s.destination.options.date)collapsedDays.delete(s.destination.options.date);finishMove(s.id,s.destination.options)}}
+function updatePointerDrop(){
+ const s=pointerReorder;if(!s?.active)return;
+ const destination=pointerDestination(s.x,s.y,s.id);if(!destination)return;
+ if(destination.key===s.slotKey)return;
+ const before=captureDragLayout();clearDropMarks();s.destination=destination;s.slotKey=destination.key;
+ destination.parent.insertBefore(s.gap,destination.before===s.gap?s.gap.nextSibling:destination.before);
+ if(destination.node.classList.contains('week-day'))destination.node.classList.add('day-drop');
+ animateDragLayout(before);
+}
+function endPointerReorder(commit){
+ const s=pointerReorder;if(!s)return;
+ const before=captureDragLayout(),from=s.ghost?.getBoundingClientRect();
+ pointerReorder=null;cancelAnimationFrame(s.frame);s.ghost?.remove();s.gap?.remove();
+ s.item.classList.remove('is-dragging');s.item.style.removeProperty('left');s.item.style.removeProperty('top');s.item.style.removeProperty('width');
+ document.body.classList.remove('is-reordering');try{s.handle.releasePointerCapture(s.pointer)}catch{}draggedTaskId=null;clearDropMarks();
+ if(commit&&s.active&&s.destination){if(s.destination.options.date)collapsedDays.delete(s.destination.options.date);finishMove(s.id,s.destination.options,{before,from})}
+ else if(s.active){animateDragLayout(before,s.id);settleDraggedTask(s.id,from)}
+}
 function startPointerReorder(event,task,item,handle){
  if(event.button!==0||pending.has(task.id))return;event.preventDefault();handle.focus({preventScroll:true});
- const rect=item.getBoundingClientRect();const s={id:task.id,item,handle,pointer:event.pointerId,startX:event.clientX,startY:event.clientY,x:event.clientX,y:event.clientY,rect,active:false,destination:null,frame:0};pointerReorder=s;handle.setPointerCapture(event.pointerId);
- handle.onpointermove=e=>{if(pointerReorder!==s)return;s.x=e.clientX;s.y=e.clientY;if(!s.active&&Math.hypot(s.x-s.startX,s.y-s.startY)>4){s.active=true;draggedTaskId=task.id;s.ghost=item.cloneNode(true);s.ghost.classList.add('drag-preview');s.ghost.setAttribute('aria-hidden','true');s.ghost.inert=true;s.ghost.style.width=rect.width+'px';document.body.append(s.ghost);item.classList.add('is-dragging');document.body.classList.add('is-reordering');const tick=()=>{if(pointerReorder!==s||!s.active)return;autoScrollDrag(s.y);updatePointerDrop();s.frame=requestAnimationFrame(tick)};s.frame=requestAnimationFrame(tick)}if(s.active){s.ghost.style.left=rect.left+(s.x-s.startX)+'px';s.ghost.style.top=rect.top+(s.y-s.startY)+'px';updatePointerDrop()}};
+ const rect=item.getBoundingClientRect();const s={id:task.id,item,handle,pointer:event.pointerId,startX:event.clientX,startY:event.clientY,x:event.clientX,y:event.clientY,rect,active:false,destination:null,slotKey:'origin',frame:0};pointerReorder=s;handle.setPointerCapture(event.pointerId);
+ handle.onpointermove=e=>{
+  if(pointerReorder!==s)return;s.x=e.clientX;s.y=e.clientY;
+  if(!s.active&&Math.hypot(s.x-s.startX,s.y-s.startY)>4){
+   s.active=true;draggedTaskId=task.id;s.ghost=item.cloneNode(true);s.ghost.classList.add('drag-preview');s.ghost.setAttribute('aria-hidden','true');s.ghost.inert=true;s.ghost.style.width=rect.width+'px';document.body.append(s.ghost);
+   const before=captureDragLayout();s.gap=makeDropGap(rect.height);item.parentNode.insertBefore(s.gap,item);
+   const list=$('.tasks'),listRect=list.getBoundingClientRect();item.style.left=rect.left-listRect.left+'px';item.style.top=rect.top-listRect.top+list.scrollTop+'px';item.style.width=rect.width+'px';item.classList.add('is-dragging');document.body.classList.add('is-reordering');animateDragLayout(before,task.id);
+   const tick=()=>{if(pointerReorder!==s||!s.active)return;autoScrollDrag(s.y);updatePointerDrop();s.frame=requestAnimationFrame(tick)};s.frame=requestAnimationFrame(tick);
+  }
+  if(s.active){s.ghost.style.left=rect.left+(s.x-s.startX)+'px';s.ghost.style.top=rect.top+(s.y-s.startY)+'px';updatePointerDrop()}
+ };
  handle.onpointerup=()=>endPointerReorder(true);handle.onpointercancel=()=>endPointerReorder(false);handle.onlostpointercapture=()=>{if(pointerReorder===s)endPointerReorder(false)};
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pointerReorder){e.preventDefault();endPointerReorder(false)}});
