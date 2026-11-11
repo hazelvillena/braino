@@ -48,3 +48,5 @@ Agent integration is planned, not connected yet. Future writes should go through
 `Assets/BrainoMark.png` is the original supplied transparent artwork. The Dock/installer icon places a larger version over a softly shaded lemon tile while preserving the mark's open spaces. Header and menu-bar glyphs retain transparency. `scripts/BrandAssets.swift` regenerates the assets.
 
 See `docs/design-system.md` for design choices and research. Checks cover planning/history filters, native migration and persistence, delete/Undo, category persistence, bridge round-trips and bundled-interface parity. An isolated desktop smoke test verified capture, saved-task reload, empty Completed behavior and Cmd+A replacement; test data lives separately under `.cache/desktop-qa`.
+
+The desktop initially opens at its minimum width (410 pt). Control–Space shows and focuses Braino from the background; pressing it again while Braino is active hides it. The menu-bar Show command always opens it, and Hide is also available there.

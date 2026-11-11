@@ -188,7 +188,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self
         web.setValue(false, forKey: "drawsBackground")
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 470), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 410, height: 470), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         window.title = "Braino"; window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false; window.delegate = self
         window.contentView = web
@@ -206,6 +206,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         status.button?.setAccessibilityLabel("Braino tasks")
         let menu = NSMenu()
         menu.addItem(withTitle: "Show Braino    ⌃Space", action: #selector(show), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Hide Braino", action: #selector(hideWindow), keyEquivalent: "").target = self
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Braino", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         status.menu = menu
@@ -213,7 +214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         InstallEventHandler(GetApplicationEventTarget(), { _, _, pointer in
             guard let pointer else { return noErr }
             let delegate = Unmanaged<AppDelegate>.fromOpaque(pointer).takeUnretainedValue()
-            DispatchQueue.main.async { delegate.show() }; return noErr
+            DispatchQueue.main.async { delegate.toggleVisibility() }; return noErr
         }, 1, &event, Unmanaged.passUnretained(self).toOpaque(), nil)
         let result = ProcessInfo.processInfo.environment["BRAINO_TESTING"] == "1" ? noErr : RegisterEventHotKey(UInt32(kVK_Space), UInt32(controlKey), EventHotKeyID(signature: 0x53544C4C, id: 1), GetApplicationEventTarget(), 0, &hotkey)
         if result != noErr { report("Control–Space is unavailable. Use the menu bar to open Braino.") }
@@ -237,7 +238,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     @objc func show() {
         window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
-        if ready { DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { self.window.makeFirstResponder(self.web); self.web.evaluateJavaScript("window.brainoFocusCapture?.()", completionHandler: nil) } }
+        focusCapture()
+    }
+    @objc func hideWindow() {
+        window.orderOut(nil)
+        NSApp.hide(nil)
+    }
+    @objc func toggleVisibility() {
+        if window.isVisible && window.isKeyWindow && NSApp.isActive { hideWindow() } else { show() }
+    }
+    func focusCapture() {
+        guard ready else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            guard self.window.isVisible, NSApp.isActive else { return }
+            self.window.makeFirstResponder(self.web)
+            self.web.evaluateJavaScript("window.brainoFocusCapture?.()", completionHandler: nil)
+        }
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
@@ -256,7 +272,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             case "pin":
                 let enabled = body["enabled"] as? Bool == true
                 UserDefaults.standard.set(enabled, forKey: "floating"); window.level = enabled ? .floating : .normal
-            case "ready": ready = true; show()
+            case "ready": ready = true; focusCapture()
             case "layout":
                 if let value = body["height"] as? NSNumber { fitWindow(value.doubleValue) }
             default: break

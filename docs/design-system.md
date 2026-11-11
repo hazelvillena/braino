@@ -98,3 +98,5 @@ The weekly list is capped at 370 px (or 48 vh on smaller browser viewports), wit
 Hovering or keyboard-focusing a task reveals a small trash control. Delete removes the task immediately and offers Undo; Undo restores the original task, completion state and list position. Native contextual deletion uses the same reversible path. Completion and deletion share the latest-action Undo slot.
 
 Weekly day cards use the same solid white surface as tasks. Entering This week aligns Today at the top of the scroll viewport while preserving chronological order, so previous days remain above and later days remain below. This is an initial scroll position, not a sticky header.
+
+The desktop default width equals its minimum, 410 pt. Control–Space toggles an active, visible window off; from another app or a hidden state it brings Braino forward and focuses capture. Delayed page readiness or focus callbacks never reopen a window the user has hidden.
