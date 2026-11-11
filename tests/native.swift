@@ -50,3 +50,19 @@ precondition(store.tasks.count == countBeforeDelete)
 precondition(store.tasks[0].id == beforeDelete.id && store.tasks[0].title == beforeDelete.title)
 precondition(TaskStore(url: fixture).tasks[0].id == beforeDelete.id)
 print("Deletion checks passed: removal, exact restoration and persistence.")
+
+let bridgeState = DesktopBridge.state(store, floating: true)
+let bridgeJSON = try JSONSerialization.data(withJSONObject: bridgeState)
+let decodedState = try JSONSerialization.jsonObject(with: bridgeJSON) as! [String: Any]
+let roundTrip = try DesktopBridge.tasks(decodedState["tasks"] as! [[String: Any]], existing: store.tasks)
+precondition(roundTrip.count == store.tasks.count)
+for (old, new) in zip(store.tasks, roundTrip) {
+ precondition(old.id == new.id && old.title == new.title && old.notes == new.notes && old.created == new.created)
+ precondition(old.scheduled == new.scheduled && old.dueDate == new.dueDate && old.completed == new.completed)
+}
+do {
+ let duplicate = (decodedState["tasks"] as! [[String: Any]])[0]
+ _ = try DesktopBridge.tasks([duplicate, duplicate], existing: store.tasks)
+ fatalError("Duplicate IDs must be rejected")
+} catch DesktopBridge.Failure.invalidTask { }
+print("Desktop bridge checks passed: JSON validity, complete data round-trip, existing creation dates and duplicate rejection.")

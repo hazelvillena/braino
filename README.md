@@ -1,52 +1,50 @@
 # Braino
 
-A local Mac task companion: a quiet desktop window, menu bar access, and Control–Space to bring it forward and focus quick capture.
+A local Mac task companion with a compact desktop window, menu bar access and **Control–Space** capture.
 
-## Run
+## Install
 
-Requires macOS 14+ and Apple Command Line Tools. No third-party dependencies.
+Open `dist/Braino.dmg`, drag Braino to Applications and launch it. Quit an older Braino before replacing it. Tasks are stored outside the application bundle, so replacing the app keeps them.
+
+Requires an Apple Silicon Mac running macOS 14 or newer. This is a locally signed build, not notarized for public distribution.
+
+## Build
+
+Requires Apple Command Line Tools, Python 3 and Node.js for development checks. No downloaded runtime dependencies.
 
 ```sh
+./scripts/test.sh
 ./build.sh
 open Braino.app
 ```
 
-Enter a task and press Return. Today includes overdue tasks; This week shows Monday–Sunday with inline capture under every day; Someday holds undated ideas. The ellipsis opens a soft task editor for notes, schedule and an optional category and due date; Save commits the draft and Cancel discards it. New category… is available in the category dropdown. Complete a task to play a short scratch-off and move it to the Completed dropdown. Filter completion history by day, week, month, all time or inclusive custom dates. Undo restores the last completion. The icon-only pin keeps Braino above other apps; hover for “Keep on top.” Closing the window keeps menu bar access and the shortcut running. Quit from the menu bar.
+Create the installer with `./package.sh`.
 
-## Local data and agent integration
+## One interface
 
-Tasks persist in `~/Library/Application Support/Braino/tasks.json`. No cloud, analytics, or network requests. Stable UUIDs, title, notes, schedule date, optional category, and completion timestamp form the initial task model.
+The Mac app bundles the exact HTML, CSS and JavaScript from `preview/` and renders it locally in WKWebView. There is no second SwiftUI implementation to drift from the preview. AppKit supplies the native window, menu bar, pinning, global shortcut and standard Edit menu (including Cmd+A, Cut, Copy, Paste and Undo).
 
-Agent integration is planned, not connected yet. Use an app-owned command/API layer for future writes so agents and the UI cannot overwrite each other. Do not edit the JSON while the app is running. Future work: agent task provenance, reviewable proposed changes, projects, recurring tasks, configurable shortcut, and launch at login.
+`node preview/server.mjs` serves the same interface at http://localhost:4317. It binds only to 127.0.0.1. Browser demo tasks use separate browser-local storage; the installed Mac app reads and writes native files through a validated local message bridge. The desktop loads bundled files and does not require localhost or an internet connection.
 
-## Source
+The preview adds presentation chrome and demo controls around the interface. The Mac app uses the real macOS title bar and keeps the window sized to its content.
 
-`Sources/Braino.swift` contains the SwiftUI interface, AppKit window/menu bar lifecycle, Carbon hotkey registration, and atomic JSON persistence. `Package.swift` supports opening the project in development tools; `build.sh` builds the app directly with a local compiler cache.
+## Task flow
 
-This is an initial prototype. It is locally ad-hoc signed, not notarized for distribution. Build verification does not establish interactive UI or shortcut behavior; those require a desktop smoke test.
+- Today includes today and overdue planned tasks. This week has collapsible white day cards and its own compact scrolling area, initially aligned to Today. Someday holds undated thoughts.
+- Type into “add something” and press Return. Capture goes to the selected view. Due dates and categories are optional and independent of that placement.
+- Task titles and expanded notes edit inline. Structured details use Save/Cancel. The category menu includes New category…; its unfiltered label is All.
+- Complete a task for a short scratch-off. Completed history appears only when at least one completed task exists. It defaults to Past week and supports calendar-day, month, all-time and inclusive custom filters.
+- Hover or focus a task to reveal Delete. Undo restores the latest deletion or completion.
+- The pin keeps Braino above other windows. Closing the window leaves menu bar access and Control–Space running. Quit from the application or menu bar menu.
 
-## Branding and installer
+## Local data
 
-The warm yellow/black identity is shared across the app, Dock, Finder and installer. Run `./package.sh` to create `dist/Braino.dmg`; open it and drag Braino to Applications. This build targets Apple Silicon Macs. The installer and app are locally signed, not notarized. macOS may require approval when distributing to another Mac.
+Tasks remain at `~/Library/Application Support/Braino/tasks.json`; named categories are in `categories.json` in the same folder. Existing IDs, task text, notes, creation dates, planning dates, due dates and completion state are preserved by the desktop bridge. There is no cloud sync or analytics. Do not edit these files while Braino is running.
 
-Generate a deterministic interface preview without changing tasks:
+Agent integration is planned, not connected yet. Future writes should go through an app-owned API rather than editing the JSON concurrently.
 
-```sh
-Braino.app/Contents/MacOS/Braino --render-preview /tmp/braino-preview.png
-```
+## Brand and checks
 
-## Local browser design preview
+`Assets/BrainoMark.png` is the original supplied transparent artwork. The Dock/installer icon places a larger version over a softly shaded lemon tile while preserving the mark's open spaces. Header and menu-bar glyphs retain transparency. `scripts/BrandAssets.swift` regenerates the assets.
 
-Run `node preview/server.mjs`, then visit http://localhost:4317. No dependencies or installation needed. The preview supports capture, Today/Inbox/Logbook, notes, and completion with its own browser-local demo data. It is an HTML approximation, not the native SwiftUI renderer; native window pinning and system-wide hotkeys are not available in a browser. The server binds only to 127.0.0.1 and serves only the preview and its icon. Stop with Control-C.
-
-## Design and verification
-
-See [the design system](docs/design-system.md) for tokens, completion timing, information architecture, research and migration behavior. Run `./scripts/test.sh` for browser model tests and native storage, migration, scheduling and history checks. Browser demo state uses `braino-preview-v2`; existing v1 tasks migrate without inventing dates. Preview data remains separate from native data.
-
-New thoughts go into the active planning view. Due dates are optional and independent of the planning date; assigning a due date does not move a thought to another view. Notes can be expanded or collapsed without opening the full editor.
-
-Task titles and expanded notes can also be edited directly in place and save as typed. Capture uses “add something” in a soft dashed outline. The category filter’s unfiltered label is All.
-
-This week stays within a compact scroll area. Each day is a rounded card that can be collapsed independently. Hover over a task to reveal Delete; Undo restores it.
-
-The weekly view lands on Today at the top; scroll up for earlier days or down for later days. Day cards and task cards share white surfaces.
+See `docs/design-system.md` for design choices and research. Checks cover planning/history filters, native migration and persistence, delete/Undo, category persistence, bridge round-trips and bundled-interface parity. An isolated desktop smoke test verified capture, saved-task reload, empty Completed behavior and Cmd+A replacement; test data lives separately under `.cache/desktop-qa`.

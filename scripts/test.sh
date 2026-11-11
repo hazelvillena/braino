@@ -11,3 +11,6 @@ Path('.cache/native-tests/main.swift').write_text(source + '\n' + Path('tests/na
 PY
 swiftc -target arm64-apple-macos14.0 -swift-version 5 -module-cache-path "$PWD/.cache/modules" .cache/native-tests/main.swift -o .cache/native-tests/check
 .cache/native-tests/check "$PWD/.cache/native-tests/tasks.json"
+python3 scripts/bundle_ui.py
+python3 tests/bundle.test.py
+node --check Braino.app/Contents/Resources/UI/app.bundle.js

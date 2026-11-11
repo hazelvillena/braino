@@ -1,3 +1,9 @@
+# Implementation update: 0.7
+
+The desktop now bundles the same `preview/` UI in WKWebView. Earlier entries describing separate SwiftUI animations and controls are historical; the shared CSS and JavaScript are authoritative for both interfaces. Use the same system sans stack in both engines. Native code owns the window, menu bar, Control–Space, standard text-editing menus and file persistence.
+
+Completed is absent when there are no completed tasks. The native title-bar gap is provided only by macOS, without a duplicate browser chrome or SwiftUI top inset. Desktop window height follows the content. The Dock icon is a large, unchanged transparent brain drawing composited over a softly shaded lemon tile; menu/header glyphs stay transparent.
+
 # Braino design system
 
 Braino should feel light, direct and a little tactile. The dissolving pixel brain and rounded lowercase wordmark are the identity. Preserve the supplied artwork and its transparency; do not fill, silhouette, trace, or recolor it.
