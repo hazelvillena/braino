@@ -2,7 +2,11 @@
 
 ![Pixel fragments gather into the Braino brain, reshape into a task, and resolve into a checkmark.](docs/media/braino-motion.gif)
 
-A quiet place for passing thoughts and everyday tasks. Braino is a compact, local Mac app: press **Control–Space**, write something down, and carry on.
+**One shortcut. Start typing.**
+
+Braino is a compact, local Mac app for small tasks. Press **Control–Space**, write something down, and tuck it away with the same shortcut.
+
+You already have places to keep tasks. Braino focuses on making capture easy to reach, with no account or workspace setup before your first task. Categories, notes and due dates can wait until you need them.
 
 ## Using Braino
 
@@ -15,7 +19,7 @@ A quiet place for passing thoughts and everyday tasks. Braino is a compact, loca
 - **A little room for mistakes:** The on-screen Undo button restores your latest completion, deletion or move. Hover over a task to reveal Delete.
 - **Stay within reach:** Use the pin to keep Braino above other windows. Closing its window leaves the app running in the menu bar; use Quit Braino to exit.
 
-A due date is separate from a task’s planned day. Adding one does not move the task between Today, This week and Someday. In the weekly view, add directly under a day to plan it there; the main capture field in Today or This week adds to today.
+A due date is separate from a task’s planned day. Adding one does not move the task between Today, This week and Someday. In Today, capture adds to today. In the weekly view, add directly under a day to plan it there. Someday capture stays undated.
 
 For keyboard reordering, focus a task’s grip and press **Option–↑ / ↓** within its current list or day. If Control–Space is unavailable, use **Show Braino** in the menu bar.
 
@@ -88,4 +92,4 @@ The window starts at its minimum width of 410 points and adjusts its height to f
 
 The original transparent brain artwork is `Assets/BrainoMark.png`. `scripts/BrandAssets.swift` generates the app, menu-bar and header assets. The README animation is a motion illustration rather than a recording of the app.
 
-See [the design system](docs/design-system.md) for the visual direction and interaction notes.
+See [product intent](docs/product.md) for the thinking behind Braino, [the design system](docs/design-system.md) for interface guidance, and [the portfolio handoff](docs/portfolio/README.md) for the current visual kit.

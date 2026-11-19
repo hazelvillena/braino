@@ -1,108 +1,91 @@
-# Implementation update: 0.7
-
-The desktop now bundles the same `preview/` UI in WKWebView. Earlier entries describing separate SwiftUI animations and controls are historical; the shared CSS and JavaScript are authoritative for both interfaces. Use the same system sans stack in both engines. Native code owns the window, menu bar, Control–Space, standard text-editing menus and file persistence.
-
-Completed is absent when there are no completed tasks. The native title-bar gap is provided only by macOS, without a duplicate browser chrome or SwiftUI top inset. Desktop window height follows the content. The Dock icon is a large, unchanged transparent brain drawing composited over a softly shaded lemon tile; menu/header glyphs stay transparent.
-
 # Braino design system
 
-Braino should feel light, direct and a little tactile. The dissolving pixel brain and rounded lowercase wordmark are the identity. Preserve the supplied artwork and its transparency; do not fill, silhouette, trace, or recolor it.
+Current implementation: **0.8.1**. The shared HTML, CSS and JavaScript in `preview/` define the interface in both the browser and the Mac app. Native AppKit code supplies the window, menu bar, global shortcut, text-editing menus and persistence. Earlier separate SwiftUI controls are no longer part of the app.
 
-## Foundations
+## Product principle
+
+**One shortcut. Start typing.**
+
+Braino aims to reduce the effort of capturing a small task. People already have tools; the design opportunity is making the way into this one short and predictable. Writing comes before organizing. See [product intent](product.md) for the positioning, scope and claims to use in the portfolio.
+
+## Visual foundations
 
 | Token | Value | Use |
 | --- | --- | --- |
-| Lemon | #F5D928 | Selected planning pill, completion check, add button |
-| Carbon | #191A17 | Text, icons, scratch line |
-| Canvas | #F9F8F2 | Neutral, lightly warm app background |
-| Surface | #FFFFFF | Task cards and capture |
-| Muted | #7D7F75 | Supporting text |
-| Divider | #E9E9DF | Quiet separation |
-| Type | SF Pro Rounded / system rounded sans | Brand, headings, controls, supporting copy |
-| Card radius | 14 px | Tasks and capture |
+| Lemon | `#F5D928` | Selected planning pill, completion and other focused feedback |
+| Carbon | `#191A17` | Text, icons and scratch line |
+| Canvas | `#F9F8F2` | Lightly warm window background |
+| Surface | `#FFFFFF` | Tasks, weekly day cards and secondary controls |
+| Muted | `#7D7F75` | Supporting text |
+| Divider | `#E9E9DF` | Quiet separation |
+| Type | System sans: `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, sans-serif | Shared browser and desktop stack |
+| Task radius | 14 px | Rounded task surfaces |
 | Spacing | 4, 8, 12, 16, 24 px | Repeated rhythm |
 
-Headings are bold rounded sans, never serif. Body text uses medium and regular weights; reserve heavy weight for the wordmark and headings. Avoid tracking-heavy uppercase footers. Footer copy: “Take it easy. One thing at a time.” Yellow stays in small purposeful accents, not large panels or the icon background. The current browser falls back to the available system sans; the native app uses Apple's rounded system font.
+The wordmark is the strongest text. Section headings are compact, approximately 19 px; planning-pill labels are approximately 10.5–11 px. Keep the top area short so tasks are visible when the shortcut opens the window. Avoid serif headings and decorative subtitles inside the app.
 
-## Information architecture
+The supplied transparent pixel brain is the identity. Preserve its silhouette and open spaces; do not replace it with a solid fill. `Assets/BrainoMark.png` is the original source. The Dock and installer icon use a larger brain over a shaded lemon tile; header and menu-bar marks remain transparent. `scripts/BrandAssets.swift` generates these assets.
 
-- Today: scheduled today and overdue tasks. No silent disappearance at midnight.
-- This week: Monday–Sunday in local time, all seven days in one continuous list, including empty days, each with inline task capture.
-- Someday: undated tasks. It replaces a separate inbox for this small first version.
-- Categories: optional per-task text, none by default. Filter by all, uncategorized, or a category. The dropdown includes New category… for lightweight creation; empty categories persist and are selected immediately. No setup required.
-- Completed: collapsed below open tasks, independent of the planning tab, honoring the category filter. Completion immediately moves the task here after the feedback animation. Reopen via its check.
-- Completed opens with Past week selected. Filters: Past day (today), Past week (today + previous six local dates), Past month (today + previous 29 local dates), All time, Custom range (inclusive dates). These are calendar-day ranges, not rolling-hour windows.
-- Legacy completed tasks without a timestamp appear only in All time; never fabricate a completion date.
-- Keep on top: icon-only pin with a short hover tooltip and an accessible name. It controls floating-window behavior on Mac. In the browser it demonstrates state and explains the native behavior.
+## Capture and focus
 
-## Completion feedback
+The input reads “add something” inside a soft dashed container. Return saves and leaves capture ready for another task. The footer reads “Log your to do’s.”
 
-Browser sequence: immediate yellow check with a small settling motion (~170–260 ms); scratch line draws left to right (~240 ms, begins 80 ms after click); row fades after 340 ms; task enters Completed at ~480 ms. A subtle check-local ring reinforces the action, without screen-wide effects, sound, streaks or pressure. Undo remains available for the last completion. The native app uses a check fill, spring settle, line sweep and ~450 ms handoff with Undo. Check and status announce the result without relying only on color.
+A title is sufficient. Due date and category controls start collapsed; opening them should be a choice, not a required step. Due dates begin unset. Category defaults to none unless a category filter supplies the capture context.
 
-Reduced motion: respect OS preferences. The browser also exposes a Reduce motion control. In reduced motion the state changes immediately and retains clear static feedback; no delay, scale, ring or movement is required.
+Control–Space shows and focuses the Mac app from the background. Pressing it again while the window is active hides it. Delayed focus callbacks must never reopen a hidden window. In This week, capture focus goes to today's inline field, expanding its day card if needed. The browser shortcut only focuses capture within the page.
 
-## Research and judgment
+## Planning and metadata
 
-[NN/g: The Role of Animation and Motion in UX](https://www.nngroup.com/articles/animation-purpose-ux/) recommends brief, unobtrusive motion that communicates feedback and state changes, and warns that irrelevant motion distracts.
+- **Today:** tasks planned for today and earlier. Tasks do not silently disappear at midnight.
+- **This week:** Monday–Sunday in local time, with a white collapsible card and inline capture for every day, including empty days. Entering the view initially scrolls Today to the top; earlier days remain above it. Today is not a sticky header.
+- **Someday:** tasks without a planned day.
+- **Due date:** separate from planning placement. Setting one does not move the task between views.
+- **Categories:** optional names, with All, Uncategorized and named filters. The custom category menu includes New category…; named categories persist even when empty.
+- **Completed:** absent until at least one task is completed. It opens with Past week selected and honors the category filter. Reopen a task using its check.
 
-[NN/g: Executing UX Animations](https://www.nngroup.com/articles/animation-duration/) recommends defining trigger, transformation, timing and easing, with shorter, subtler feedback for frequent actions. The exact Braino timings are design choices, not experimentally proven optimal durations.
+Completed ranges use local calendar dates: Past day is today; Past week is today plus six previous dates; Past month is today plus 29 previous dates. Custom dates are inclusive. Legacy completions without timestamps appear in All time; do not invent completion dates.
 
-[Deci & Ryan, 2000: The What and Why of Goal Pursuits](https://selfdeterminationtheory.org/SDT/documents/2000_DeciRyan_PIWhatWhy.pdf) discusses autonomy and competence in motivation. This supports a restrained design hypothesis: make the user's progress visible without introducing controlling rewards. It does not establish that a particular task animation releases dopamine or universally “scratches the brain.”
+The category trigger sits immediately before the task count and reads “All” when unfiltered. Open tasks display only explicitly assigned due dates and categories, not logging-date records.
 
-[W3C: Understanding Animation from Interactions](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions) explains supporting user control over nonessential motion. Braino follows OS reduced-motion preferences and keeps its completion signal understandable without animation.
+## Window and list density
 
-Validate subjective satisfaction by trying repeated completions, including keyboard use and reduced motion. “Satisfying” is a product hypothesis, not a medical or universal psychological claim.
+The desktop starts at its minimum width of 410 points. Its height fits content within screen limits. Capture remains reachable outside the main task scroll region.
 
-## Refinement: movement and editing
+The weekly list has its own scroll area, capped at `min(48vh, 370px)` in the shared CSS. Day cards start expanded and can be collapsed independently. The same shared layout runs in WKWebView; there is no separate native weekly layout to maintain.
 
-Planning pills share one sliding yellow highlight. Browser transform/width transitions use a 430 ms decelerating curve, preserving the highlight element through task renders. Native tabs use a matched-geometry capsule with a 430 ms spring. Reduced motion disables the movement.
+Task cards must not shrink inside the flex list. Opening a structured task editor releases the ordinary task-list height cap so Save/Cancel and padding remain reachable.
 
-Task details are drafts. A small Save action commits title, notes, schedule and category together and closes the editor. Cancel discards changes. Browser drafts survive task-list rerenders until saved or cancelled. Soft neutral fields use minimal borders, quieter labels, and visible focus feedback. Command-Enter saves.
+## Editing, ordering and recovery
 
-The weekly list shows all seven day sections, including empty days, without a second row of day toggles. Each day has a quiet Add a task… field; Return saves to that day and leaves focus there. Category-filtered inline capture inherits the chosen category.
+Titles and expanded notes edit directly in place and persist as typed. There is no separate Edit note link. The icon-only note chevron sits immediately before the ellipsis. The structured editor keeps Save/Cancel for notes, due date and category, without duplicating the inline title field.
 
-## Compact shortcut panel
+A small grip before the check appears on hover or focus. Pointer capture supports dragging in both browser and WebKit. A lifted task preview follows the pointer; a full yellow destination gap opens while neighbors slide aside. The task settles into its final position on release. Edge scrolling supports long lists. Empty or collapsed weekly days accept a drop and open after a successful move. Escape cancels.
 
-The wordmark is the largest text. View labels are 19 px semibold, planning pills use 10.5–11 px labels and 6 px vertical padding, and explanatory subtitles are removed. Task cards are compact with a 44 px minimum in the browser. The browser's active task list scrolls independently for long lists; the native capture line stays outside the task scroll region so shortcut focus does not scroll the list to the bottom.
+Order persists in the task array. Cross-day moves change the planning day, not the due date. Category-filtered moves preserve unrelated tasks and metadata. Completed history remains ordered by completion date. Keyboard alternative: focus the grip, then Option–Up/Down within the current list or day.
 
-Quick capture is a quiet plus-and-text line, with Return to save. Capture belongs to the selected planning view. Its optional details contain a clearly labeled Due date and category picker, hidden until opened. There are no additional planning pills in capture. Due date is independent of planning placement and starts unset. Category and date metadata do not block capture.
+Delete appears on hover or keyboard focus. Completion, deletion and moving share the latest-action on-screen Undo slot. Move Undo restores the prior order and planning day while preserving later text edits and newly captured tasks.
 
-## View flow and secondary details
+## Motion
 
-Browser view changes fade and settle content by 5 px over 260 ms while smoothly adapting its height; the yellow planning highlight retains its separate continuous slide. Native task groups use an opacity/5 px transition alongside the selected pill spring. Both respect reduced motion.
+Motion should clarify what changed without delaying capture or creating another step.
 
-The category filter lives in the title row as a quiet small control. Notes are collapsed behind a Notes disclosure by default; expand to read the full note or choose Edit note. Task due dates display as explicitly labeled metadata and never change the planning view. Existing scheduled dates remain planning dates; no historical deadline is invented during migration.
+- **Planning:** one continuous sliding yellow highlight, with a separate short content fade/settle. Preserve the highlight element through rerenders.
+- **Notes and day cards:** animate expansion downward and reverse on collapse; collapsed content remains inaccessible to keyboard and screen readers.
+- **Completion:** immediate yellow check and settling feedback, a left-to-right scratch, then row fade and handoff to history at approximately 480 ms. Retain Undo.
+- **Ordering:** show the destination before release, slide neighbors into place, then settle and briefly highlight the dropped task.
+- **Reduced motion:** respect OS preferences; the browser also offers a Reduce motion control. Keep static state feedback understandable without movement.
 
-## Task controls and capture focus
+Portfolio animation can use a more expressive keypress, spring and tuck-away to explain the interaction. Label it as a motion illustration; do not imply that a staged animation is a native-app recording. Gallery covers remain graphics without wordmarks, taglines or interface chrome.
 
-The notes control is an icon-only chevron immediately before the ellipsis. Opening notes expands the existing panel downward over 280 ms; closing reverses the motion. The native row uses a 260 ms transition. The browser panel remains in the DOM to animate both directions, while collapsed content is inert and hidden from accessibility navigation.
+## Voice and validation
 
-The category filter sits just before the task count. The browser uses a small custom white menu with checked selection, rounded corners, keyboard navigation and Escape/click-outside dismissal. Due/category controls remain collapsed by default, reset after logging or switching views, and use white surfaces when opened.
+Prefer practical language about capture and access. Avoid framing users as lacking places to write, or implying that all existing tools are too formal. Aim for low friction; do not claim it is frictionless for everyone.
 
-Copy: “Log your to do’s.” The shortcut focuses capture without a click. Browser load/window focus and Control–Space focus the relevant capture input; native activation defers the focus request until its window is ready and resets the focus binding before restoring it. Weekly capture focuses today's inline field.
+Subjective satisfaction and reduced interruption are design hypotheses. Do not claim a completion animation releases dopamine or universally “scratches the brain.” Validate by observing first capture, repeated use, keyboard navigation and reduced motion.
 
-## Inline editing and capture outline
+Further reading retained from the original design exploration:
 
-Expanded notes are directly editable text in place, with no Edit note link or extra mode. Inline titles and notes persist as typed; the browser restores the pre-edit value on Escape. The structured details form retains Save/Cancel for notes, due date and category, but no longer repeats the Task title field.
-
-Capture placeholder is “add something” in a soft dashed container, including per-day capture. The footer retains “Log your to do’s.” The category trigger reads “All” for the unfiltered state.
-
-Task cards do not shrink within their flex list. Opening the structured editor releases the browser list height cap so the action row stays reachable and its padding is not clipped.
-
-Open tasks do not show planning/logging date records beneath their titles. Weekly day headings already provide placement context; only explicitly assigned due dates and categories appear as task metadata. Completion dates remain in the Completed history.
-
-## Compact weekly cards and deletion
-
-The weekly list is capped at 370 px (or 48 vh on smaller browser viewports), with its own scroll region. Native weekly content is capped at 350 pt within the window. Each day is a soft bordered, rounded card; its header toggles the contents with a short height/fade animation. All days start expanded. Browser collapsed-day choices survive task rerenders in the current visit. Capture shortcuts expand today's card when needed and bring its input into view.
-
-Hovering or keyboard-focusing a task reveals a small trash control. Delete removes the task immediately and offers Undo; Undo restores the original task, completion state and list position. Native contextual deletion uses the same reversible path. Completion and deletion share the latest-action Undo slot.
-
-Weekly day cards use the same solid white surface as tasks. Entering This week aligns Today at the top of the scroll viewport while preserving chronological order, so previous days remain above and later days remain below. This is an initial scroll position, not a sticky header.
-
-The desktop default width equals its minimum, 410 pt. Control–Space toggles an active, visible window off; from another app or a hidden state it brings Braino forward and focuses capture. Delayed page readiness or focus callbacks never reopen a window the user has hidden.
-
-## Drag ordering
-
-An unobtrusive hover/focus grip sits before each open task's check circle. Dragging uses pointer capture for consistent browser/WebKit behavior, a lifted ghost, an insertion line and edge autoscrolling inside the compact list. Normal title/note editing never starts a drag. Empty or collapsed weekly day cards accept a task and open after a successful drop. Escape cancels without modifying data.
-
-Preferred order is the persisted task-array order, preserved through the native bridge. Completed history keeps its completion-date ordering. Category-filtered moves preserve unrelated tasks and their metadata. Moving between days updates only the planning date, never the due date. Undo restores prior placement/order while preserving later text edits and newly captured tasks. Keyboard alternative: focus the grip, then Option–Up/Down.
+- [NN/g: The Role of Animation and Motion in UX](https://www.nngroup.com/articles/animation-purpose-ux/)
+- [NN/g: Executing UX Animations](https://www.nngroup.com/articles/animation-duration/)
+- [Deci & Ryan: The What and Why of Goal Pursuits](https://selfdeterminationtheory.org/SDT/documents/2000_DeciRyan_PIWhatWhy.pdf)
+- [W3C: Understanding Animation from Interactions](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions)
