@@ -1,5 +1,7 @@
 # Braino
 
+![Pixel fragments gather into the Braino brain, reshape into a task, and resolve into a checkmark.](docs/media/braino-motion.gif)
+
 A local Mac task companion with a compact desktop window, menu bar access and **Control–Space** capture.
 
 ## Install
