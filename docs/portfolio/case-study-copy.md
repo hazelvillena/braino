@@ -1,25 +1,21 @@
 # Braino — One shortcut. Start typing.
 
-## The capture moment
+## Writing it down should be easy
 
-There are already plenty of places to keep tasks. But for a passing thought, opening an app and finding the right place can be more interaction than the moment needs.
+A task pops into your head. You want to write it down and get back to what you were doing. Opening an app, finding a list and deciding how to organize it can turn a small thought into an interruption.
 
-Braino explores a simpler way in: a compact window, a keyboard shortcut, and a field that is ready to type into.
+## One shortcut. Start typing.
 
-## The response
+Control–Space brings up Braino with the task field ready. Type, press Return, and tuck it away with the same shortcut. Notes, categories and due dates are optional.
 
-Press Control–Space, write a task, and press Return. The same shortcut tucks the active window away. No account or workspace setup comes before the first task. Notes, categories and due dates are optional.
+## Small by design. Easy to reach.
 
-## Small by design
+A compact local Mac app for Today, This week and Someday. Just enough structure when you want it, with a small window that stays within reach.
 
-Braino is a local Mac app. Today, This week and Someday offer lightweight planning, while inline editing and drag ordering keep everyday actions direct. The window starts compact and longer lists scroll inside it.
+## Keep your workflow. Add a shortcut.
 
-## A companion, not another system to maintain
+Braino sits alongside the tools you already use. It gives small tasks a quick place to land, with the immediacy of a sticky note and the reach of a keyboard shortcut.
 
-The reference is the immediacy of a sticky note. Braino can sit alongside the tools someone already uses, giving small tasks a quick place to land.
+## Scope
 
-## What this project aims to test
-
-The design goal is less friction between a thought and a saved task. The shortcut and direct capture are implemented. Faster capture or reduced interruption have not been measured as usability outcomes.
-
-Add your own role, timeframe, observations and next steps where relevant; do not substitute invented metrics.
+The goal is less effort before capture. The shortcut and direct capture are implemented; faster capture and reduced interruption have not been measured as usability outcomes. Add your own role, timeframe and observations without inventing metrics.

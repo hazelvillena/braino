@@ -6,28 +6,32 @@ This is the current Braino story: people already have places to keep tasks. Brai
 
 Describe the aim as reducing friction, rather than promising that the app is frictionless for everyone. The previous “nowhere to put it” narrative is retired.
 
-## Page sequence and assets
+## One asset per purpose
 
-| Section | Still | Suggested message |
+The current upload kit has six visual assets: four stills, one desktop hotkey loop and one square gallery cover. It excludes alternate image formats, a duplicate desktop still, GIF previews and repeated posters. A single START-HERE guide contains the order and suggested copy.
+
+| Section | Asset | Message |
 | --- | --- | --- |
-| Capture moment | [Problem](assets/01-problem.jpg) | A quick thought. Too many steps. |
-| Response | [Solution](assets/02-solution.jpg) | One shortcut. Start typing. |
+| Problem | [Problem](assets/01-problem.jpg) | Writing it down should be easy. |
+| Solution | [Solution](assets/02-solution.jpg) | One shortcut. Start typing. |
 | Platform | [Planning](assets/03-platform.jpg) | Small by design. Easy to reach. |
-| Desktop scale | [Desktop](assets/04-desktop.jpg) | Control–Space. Start typing. |
-| Positioning | [Companion](assets/05-positioning.jpg) | A sticky-note habit, with a keyboard shortcut. |
+| Desktop interaction | [Hotkey loop](../media/braino-hotkey.mp4) | Show, capture, tuck away. Use once, without an additional desktop still. |
+| Positioning | [Alongside your workflow](assets/05-positioning.jpg) | Keep your workflow. Add a shortcut. |
+| Gallery tile | [Square graphic cover](../media/braino-gallery-square.mp4) | A standalone graphic for the project gallery. |
 
-These stills are 1600 × 1200. File numbers suggest ordering; the images have no numbered section tags. Website headings can sit outside the images if you prefer.
+Page stills are 1600 × 1200. The upload kit uses one PNG per still; the JPEGs linked here are repository documentation previews. File numbers guide ordering, not labels inside the images.
 
-[Editable case-study copy](case-study-copy.md) explains the capture moment, design response, platform and scope. Add your actual role, timeframe and observations; do not add invented test results or time-saved figures.
+The problem image uses plain capture steps to explain the effort before writing. Positioning uses a different, centered yellow composition: Braino's quick-capture bar floats over an existing workspace. It explains where Braino fits rather than repeating the problem.
 
-## Motion
+[Editable case-study copy](case-study-copy.md) provides short website text. Add your actual role, timeframe and observations; do not add invented results or time-saved figures.
 
-- Desktop: [MP4](../media/braino-hotkey.mp4), [GIF](../media/braino-hotkey.gif), [poster](../media/braino-desktop.jpg). Seven seconds, silent. A keypress cue leads into a small spring, capture highlight and quick tuck-away.
-- Gallery: [landscape MP4](../media/braino-gallery.mp4), [square MP4](../media/braino-gallery-square.mp4), [GIF](../media/braino-motion.gif), [poster](../media/braino-gallery-poster.png). A graphic-only pixel morph, without wordmarks, taglines or interface chrome.
+## Motion usage
 
-The desktop and its keypress/spring are staged motion illustrations using the real Braino interface and sample tasks. They are not native-app recordings or changes to the app's actual animation. The gallery cover is an abstract illustration.
+The desktop loop is seven seconds, silent, with a keypress cue, spring entry, capture highlight and quick tuck-away. It uses the real interface and sample tasks in a staged composition. It is not a native-app recording or a change to the app's animation.
 
-Prefer MP4 on websites, with `autoplay`, `muted`, `loop` and `playsinline`. Keep the intended aspect ratio. Provide a static poster for reduced-motion preferences.
+The square gallery tile is a separate 6.4-second abstract pixel animation, without a wordmark, tagline or interface chrome. It belongs in the gallery rather than repeating the desktop demo.
+
+Use MP4 on websites with `autoplay`, `muted`, `loop` and `playsinline`. Preserve aspect ratios and respect reduced-motion preferences. Documentation retains a [static desktop fallback](../media/braino-desktop.jpg) and [gallery poster](../media/braino-gallery-poster.png); these are not additional assets in the streamlined upload kit.
 
 ## Product claims
 

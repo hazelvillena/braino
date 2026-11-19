@@ -49,11 +49,11 @@ Useful future checks: can someone add a first task without explanation, find the
 
 The current kit follows this sequence:
 
-1. The capture moment: a quick thought can involve extra steps.
+1. The capture moment: writing it down should be easy.
 2. The response: one shortcut, then typing.
 3. The platform: a compact Mac app with optional structure.
-4. Desktop scale and show/hide interaction.
-5. Positioning: a quick-capture companion alongside other tools.
+4. A single desktop show/hide loop, without a duplicate desktop still.
+5. Positioning: “Keep your workflow. Add a shortcut,” shown as a capture bar alongside existing tools.
 
 The gallery cover is an abstract pixel animation. The desktop demo below is a staged motion illustration using the real UI and sample tasks; it is not a recording or a claim that the native app uses these exact presentation effects.
 
